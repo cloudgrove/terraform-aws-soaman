@@ -1,5 +1,6 @@
 downloads/
 node_modules/
 .terraform/
+*.tfstate*
 .DS_Store
 *dev.*
