@@ -17,6 +17,12 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "config_dir" {
+  description = "The directory that contains configuration files"
+  type        = string
+  default     = "config"
+}
+
 variable "domain_name" {
   description = "The target domain name"
   type        = string
