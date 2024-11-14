@@ -1,0 +1,61 @@
+version: 2.1
+orbs:
+  slack: circleci/slack@4.12.0
+jobs:
+  test_and_build:
+    machine: true
+    environment:
+      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+      CIRCLE_TEST_REPORTS: /tmp/test_reports
+      DOCKER_IMAGE_PREFIX: cloudgrove/
+    steps:
+      - checkout
+      - run:
+          name: Prepare the build setup
+          command: make prepare
+      - run:
+          name: Run tests, generates artifacts, and/or builds Docker images
+          command: make clean build
+      - run:
+          name: Save the built Docker image
+          command: docker save -o ~/project/docker-image.tar ${DOCKER_IMAGE_PREFIX}${CIRCLE_PROJECT_REPONAME}:latest
+      - persist_to_workspace:
+          root: ..
+          paths:
+            - project
+      - store_test_results:
+          path: ${CIRCLE_TEST_REPORTS}
+      - slack/notify:
+          branch_pattern: 'develop,master'
+          template: basic_fail_1
+          event: fail
+  push_and_deploy:
+    machine: true
+    steps:
+      - attach_workspace:
+          at: ..
+      - run:
+          name: Restore the built Docker image from the persisted workspace
+          command: docker load -i ~/project/docker-image.tar
+      - run:
+          name: Push artifacts and deploy
+          command: make push deploy
+      - slack/notify:
+          template: basic_fail_1
+          event: fail
+workflows:
+  test_build_push_deploy:
+    jobs:
+      - test_and_build:
+          context:
+            - main
+      - push_and_deploy:
+          context:
+            - main
+          requires:
+            - test_and_build
+          filters:
+            branches:
+              only:
+                - develop
+                - master
