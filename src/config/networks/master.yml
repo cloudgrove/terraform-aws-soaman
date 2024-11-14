@@ -1,0 +1,16 @@
+name: master
+cidr_prefix: '10.0'
+availability_zones:
+  - a
+  - b
+subnet_groups:
+  private:
+    main:
+      - 16.0/20
+      - 32.0/20
+      - 48.0/20
+  public:
+    main:
+      - 0.0/24
+      - 1.0/24
+      - 2.0/24
