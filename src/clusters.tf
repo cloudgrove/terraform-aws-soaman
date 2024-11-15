@@ -6,9 +6,9 @@ locals {
     try(yamldecode(file(file_path)).name, replace(file_path, "/${local.cluster_dir}|.yml/", "")) => yamldecode(file(file_path))
   }
   cluster_subnets = merge(flatten([
-    for cluster, config in local.cluster_configs : {
-      for key, subnet in aws_subnet.private :
-      "${cluster}.${subnet.id}" => merge(subnet, { cluster_name = cluster }) if startswith(key, "${config.vpc}.")
+    for cluster, cluster_config in local.cluster_configs : {
+      for subnet, subnet_config in local.private_subnet_configs :
+      "${cluster}.${subnet}" => merge(subnet_config, { cluster_name = cluster, subnet_name = subnet }) if startswith(subnet, "${cluster_config.vpc}.")
     }
   ])...)
 }
@@ -26,6 +26,49 @@ resource "aws_ecs_cluster" "all" {
     name  = "containerInsights"
     value = try(each.value.container_insights, "disabled")
   }
+}
+
+#
+# EFS
+#
+
+resource "aws_efs_file_system" "cluster" {
+  for_each = local.cluster_configs
+
+  creation_token = each.key
+  encrypted      = true
+  performance_mode = "generalPurpose"
+  throughput_mode  = "bursting"
+
+  tags = {
+    Name = "ecs-${each.value.vpc}.${each.key}"
+  }
+}
+
+resource "aws_efs_mount_target" "cluster" {
+  for_each = local.cluster_subnets
+
+  file_system_id  = aws_efs_file_system.cluster[each.value.cluster_name].id
+  subnet_id       = aws_subnet.private[each.value.subnet_name].id
+  security_groups = [aws_security_group.cluster[each.value.cluster_name].id]
+}
+
+resource "aws_security_group" "cluster" {
+  for_each = local.cluster_configs
+
+  name   = "ecs-${each.value.vpc}.${each.key}.efs"
+  vpc_id = aws_vpc.all[each.value.vpc].id
+}
+
+resource "aws_security_group_rule" "cluster_efs" {
+  for_each = local.cluster_configs
+
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = 2049
+  to_port           = 2049
+  cidr_blocks       = values({ for k, v in aws_subnet.private : k => v if startswith(k, "${each.value.vpc}.") })[*].cidr_block
+  security_group_id = aws_security_group.cluster[each.key].id
 }
 
 #
