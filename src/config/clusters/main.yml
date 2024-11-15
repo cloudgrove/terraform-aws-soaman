@@ -1,0 +1,3 @@
+name: main
+vpc: master
+container_insights: enabled
