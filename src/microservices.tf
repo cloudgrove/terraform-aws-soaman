@@ -187,3 +187,77 @@ resource "aws_efs_access_point" "microservice_efs" {
     Name = each.key
   }
 }
+
+#
+# IAM users & policies
+#
+
+resource "aws_iam_user" "microservice" {
+  for_each = local.microservice_configs
+
+  name = each.key
+  path = "/ecs/"
+}
+
+data "aws_iam_policy_document" "microservice" {
+  for_each = local.microservice_configs
+
+  statement {
+    actions   = ["iam:NoAction"]
+    resources = ["*"]
+  }
+
+  dynamic "statement" {
+    for_each = {
+      for k, v in try(each.value.config[var.env], each.value.config.default) :
+      k => v if k == "s3" && try(v.read_only, null) != null
+    }
+
+    content {
+      sid    = "S3ReadOnly"
+      effect = "Allow"
+      actions = [
+				"s3:ListBucket",
+        "s3:GetObject",
+      ]
+      resources = flatten([
+      for path in statement.value.read_only : [
+        "arn:aws:s3:::${path}",
+        "arn:aws:s3:::${path}/*",
+      ]
+    ])
+    }
+  }
+
+  dynamic "statement" {
+    for_each = {
+      for k, v in try(each.value.config[var.env], each.value.config.default) :
+      k => v if k == "s3" && try(v.read_write, null) != null
+    }
+
+    content {
+      sid    = "S3ReadWrite"
+      effect = "Allow"
+      actions = [
+				"s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+      ]
+      resources = flatten([
+      for path in statement.value.read_write : [
+        "arn:aws:s3:::${path}",
+        "arn:aws:s3:::${path}/*",
+      ]
+    ])
+    }
+  }
+}
+
+resource "aws_iam_user_policy" "microservice" {
+  for_each = local.microservice_configs
+
+  name   = each.key
+  user   = aws_iam_user.microservice[each.key].name
+  policy = data.aws_iam_policy_document.microservice[each.key].json
+}
