@@ -1,0 +1,27 @@
+name: &service_name nginx-service
+port: &port 80
+vpc: master
+subnet_group: main
+cluster: main
+config:
+  default:
+    desired_count: 1
+    task_definition:
+      name: *service_name
+      image: nginx
+      cpu: 512
+      memory: 1024
+      portMappings:
+        - containerPort: *port
+          hostPort: *port
+    variables:
+      SERVICE_NAME: *service_name
+      PORT: *port
+  beta:
+    desired_count: 2
+    task_definition:
+      image: nginx
+  prod:
+    desired_count: 0
+    task_definition:
+      image: nginx
