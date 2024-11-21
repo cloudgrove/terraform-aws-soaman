@@ -14,6 +14,14 @@ config:
       portMappings:
         - containerPort: *port
           hostPort: *port
+      logConfiguration:
+        logDriver: awslogs
+        options:
+          awslogs-create-group: 'true'
+          awslogs-group: *service_name
+          awslogs-region: us-east-1
+          awslogs-stream-prefix: ecs
+        secretOptions: []
     variables:
       SERVICE_NAME: *service_name
       PORT: *port
