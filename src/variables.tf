@@ -28,3 +28,9 @@ variable "domain_name" {
   type        = string
   default     = "cloudgrove.io"
 }
+
+variable "env" {
+  description = "The target environment"
+  type        = string
+  default     = "sandbox1"
+}
