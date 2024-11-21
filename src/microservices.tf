@@ -80,6 +80,18 @@ resource "aws_ecs_task_definition" "all" {
   }
 
   container_definitions = jsonencode([merge(
+    {
+      logConfiguration = {
+        logDriver     = "awslogs"
+        secretOptions = []
+        options       = {
+          awslogs-create-group = "true"
+          awslogs-group = each.key
+          awslogs-region = var.aws_region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+    },
     each.value.config.default.task_definition,
     try(each.value.config[var.env].task_definition, {}),
     {
