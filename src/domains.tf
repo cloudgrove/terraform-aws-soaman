@@ -36,3 +36,15 @@ resource "aws_route53_record" "certificate_validation" {
   type            = each.value.type
   zone_id         = aws_route53_zone.main.zone_id
 }
+
+#
+# SES
+#
+
+module "ses" {
+  source     = "./modules/ses"
+  aws_region = var.aws_region
+  zone_id    = aws_route53_zone.main.zone_id
+  domain     = aws_route53_zone.main.name
+  addresses  = [local.devops_email]
+}
