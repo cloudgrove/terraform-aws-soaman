@@ -23,6 +23,12 @@ variable "config_dir" {
   default     = "config"
 }
 
+variable "devops_ssh_key" {
+  description = "The SSH public key used for DevOps"
+  type        = string
+  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBSfpLd7V352Qx+lQGntER+N2My6jIgux1xzglsbk6PE devops@cloudgrove.io"
+}
+
 variable "domain_name" {
   description = "The target domain name"
   type        = string
@@ -32,5 +38,23 @@ variable "domain_name" {
 variable "env" {
   description = "The target environment"
   type        = string
-  default     = "sandbox1"
+  default     = "alpha"
+}
+
+variable "vpn_admin_password" {
+  description = "The password of the VPN admin account"
+  type        = string
+  sensitive   = true
+}
+
+variable "vpn_dev_password" {
+  description = "The password of the VPN developer account"
+  type        = string
+  sensitive   = true
+}
+
+variable "vpn_subdomain_prefix" {
+  description = "The VPN subdomain prefix"
+  type        = string
+  default     = "vpn"
 }
