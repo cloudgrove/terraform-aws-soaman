@@ -1,27 +1,20 @@
 # About this repo
-This repo is the backbone of every new project. Please take the time to understand its scaffolding.
+This repo hosts the Terraform functionality and its associated YAML configs to provision an SOA-based system featuring:
 
-```
-├── Makefile         # Make commands such as test, build, push, and deploy
-├── project.env      # Shell vars, such as `PROJECT_TYPE`, used by Makefile and scripts
-├── README.md        # Information on this repo
-├── .gitignore
-├── .circleci
-│   └── config.yml   # CircleCI config file
-└── scripts
-│   ├── prepare.sh   # Script for setting up the project with useful scripts
-│   └── ...          # Other scripts as needed
-└── src              # Project main source code
-    └── ...
-```
+1. Private subnets using VPC
 
-# Before you start developing
-Please follow these steps as soon as the repo is created:
+1. Docker container management using ECS
 
-1. Go to `project.env` and specify the project type.
+1. Shared file systems using EFS
 
-1. Add the necessary dependencies and package installations in `Dockerfile`.
+1. VPN access using OpenVPN
 
-1. Expand the `docker-compose` config to include other services (like Redis, Postgres, etc) and components (like mounted volumes, port mappings, etc) on which your code depends.
 
-1. Know that `docker` is installed inside the `builder` Docker image in order to run (within the Docker container) integration tests that depend on containerized servers and datastores.
+# Before you run Terraform
+Log into your target domain name registrar and be ready to:
+
+1. Add a `CNAME` record to validate the Terraform-generated ACM certificate.
+
+1. Add a `NS` record to link the Terraform-generated subdomain Route53 record (e.g. `alpha.cloudgrove.io`) to your target domain (e.g. `cloudgrove.io`).
+
+Note: these two records are blockers to the creation of the VPN box and CloudFront distributions.
