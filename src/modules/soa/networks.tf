@@ -1,6 +1,6 @@
 locals {
   network_dir        = "${var.config_dir}/networks/"
-  network_file_paths = fileset(path.module, "${local.network_dir}/**/*.yml")
+  network_file_paths = fileset("", "${local.network_dir}/**/*.yml")
   network_configs = {
     for file_path in local.network_file_paths :
     try(yamldecode(file(file_path)).name, replace(file_path, "/${local.network_dir}|.yml/", "")) => yamldecode(file(file_path))

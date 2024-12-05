@@ -1,6 +1,6 @@
 locals {
   microservice_dir        = "${var.config_dir}/microservices/"
-  microservice_file_paths = fileset(path.module, "${local.microservice_dir}/**/*.yml")
+  microservice_file_paths = fileset("", "${local.microservice_dir}/**/*.yml")
   microservice_configs = {
     for file_path in local.microservice_file_paths :
     try(yamldecode(file(file_path)).name, replace(file_path, "/${local.microservice_dir}|.yml/", "")) => yamldecode(file(file_path))

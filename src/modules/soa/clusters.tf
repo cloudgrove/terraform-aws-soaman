@@ -1,6 +1,6 @@
 locals {
   cluster_dir        = "${var.config_dir}/clusters/"
-  cluster_file_paths = fileset(path.module, "${local.cluster_dir}/**/*.yml")
+  cluster_file_paths = fileset("", "${local.cluster_dir}/**/*.yml")
   cluster_configs = {
     for file_path in local.cluster_file_paths :
     try(yamldecode(file(file_path)).name, replace(file_path, "/${local.cluster_dir}|.yml/", "")) => yamldecode(file(file_path))
