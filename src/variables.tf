@@ -41,6 +41,12 @@ variable "env" {
   default     = "alpha"
 }
 
+variable "s3_prefix" {
+  description = "The string prepended to bucket names"
+  type        = string
+  default     = "cloudgrove"
+}
+
 variable "vpn_admin_password" {
   description = "The password of the VPN admin account"
   type        = string

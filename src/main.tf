@@ -56,8 +56,15 @@ resource "aws_route53_record" "certificate_validation" {
 #
 
 module "iam" {
-  source = "./modules/iam"
+  source     = "./modules/iam"
   config_dir = "${path.module}/config"
+}
+
+module "s3" {
+  source     = "./modules/s3"
+  config_dir = "${path.module}/config"
+  env        = var.env
+  prefix     = var.s3_prefix
 }
 
 module "ses" {
@@ -69,10 +76,10 @@ module "ses" {
 }
 
 module "soa" {
-  source      = "./modules/soa"
-  aws_region  = var.aws_region
-  config_dir  = "${path.module}/config"
-  env         = var.env
+  source     = "./modules/soa"
+  aws_region = var.aws_region
+  config_dir = "${path.module}/config"
+  env        = var.env
 }
 
 module "vpn" {
