@@ -55,6 +55,11 @@ resource "aws_route53_record" "certificate_validation" {
 # Modules
 #
 
+module "iam" {
+  source = "./modules/iam"
+  config_dir = "${path.module}/config"
+}
+
 module "ses" {
   source     = "./modules/ses"
   aws_region = var.aws_region
