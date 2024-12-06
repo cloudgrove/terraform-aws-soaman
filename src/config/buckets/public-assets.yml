@@ -1,0 +1,11 @@
+name: public-assets
+access:
+  acl: public-read
+cors:
+  allowed_methods:
+    - GET
+    - PUT
+  allowed_origins:
+    - '*'
+  allowed_headers:
+    - '*'
