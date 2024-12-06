@@ -26,9 +26,9 @@ data "aws_iam_policy_document" "custom_policies" {
     for_each = try(each.value.statements, [])
 
     content {
-      sid     = statement.value.sid
-      effect  = statement.value.effect
-      actions = statement.value.actions
+      sid       = statement.value.sid
+      effect    = statement.value.effect
+      actions   = statement.value.actions
       resources = statement.value.resources
     }
   }
@@ -37,9 +37,9 @@ data "aws_iam_policy_document" "custom_policies" {
 resource "aws_iam_user_policy" "custom_policies" {
   for_each = data.aws_iam_policy_document.custom_policies
 
-  name     = each.key
-  user     = each.key
-  policy   = each.value.json
+  name   = each.key
+  user   = each.key
+  policy = each.value.json
 }
 
 

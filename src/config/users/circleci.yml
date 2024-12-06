@@ -1,0 +1,35 @@
+name: circleci
+statements:
+  - sid: DeployToECR
+    effect: Allow
+    actions:
+      - ecr:CompleteLayerUpload
+      - ecr:GetAuthorizationToken
+      - ecr:UploadLayerPart
+      - ecr:InitiateLayerUpload
+      - ecr:BatchCheckLayerAvailability
+      - ecr:PutImage
+    resources:
+      - '*'
+  - sid: DeployToECS
+    effect: Allow
+    actions:
+      - ecs:UpdateService
+    resources:
+      - '*'
+  - sid: DeployToS3
+    effect: Allow
+    actions:
+      - s3:ListBucket
+      - s3:GetObject
+      - s3:PutObject
+      - s3:DeleteObject
+    resources:
+      - arn:aws:s3:::*.public-assets/*
+  - sid: ManageCloudFrontCache
+    effect: Allow
+    actions:
+      - cloudfront:CreateInvalidation
+      - cloudfront:ListDistributions
+    resources:
+      - '*'
