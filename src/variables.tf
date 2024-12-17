@@ -47,6 +47,18 @@ variable "s3_prefix" {
   default     = "cloudgrove"
 }
 
+variable "subdomain_api_prefix" {
+  description = "The API subdomain prefix"
+  type        = string
+  default     = "api"
+}
+
+variable "subdomain_vpn_prefix" {
+  description = "The VPN subdomain prefix"
+  type        = string
+  default     = "vpn"
+}
+
 variable "vpn_admin_password" {
   description = "The password of the VPN admin account"
   type        = string
@@ -57,10 +69,4 @@ variable "vpn_dev_password" {
   description = "The password of the VPN developer account"
   type        = string
   sensitive   = true
-}
-
-variable "vpn_subdomain_prefix" {
-  description = "The VPN subdomain prefix"
-  type        = string
-  default     = "vpn"
 }

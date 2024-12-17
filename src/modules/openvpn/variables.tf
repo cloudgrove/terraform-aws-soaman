@@ -23,7 +23,7 @@ variable "dev_password" {
 }
 
 variable "domain" {
-  description = "The target domain name"
+  description = "The target domain name for the VPN server"
   type        = string
 }
 

@@ -76,10 +76,13 @@ module "ses" {
 }
 
 module "soa" {
-  source     = "./modules/soa"
-  aws_region = var.aws_region
-  config_dir = "${path.module}/config"
-  env        = var.env
+  source          = "./modules/soa"
+  config_dir      = "${path.module}/config"
+  aws_region      = var.aws_region
+  zone_id         = aws_route53_zone.main.zone_id
+  domain          = "${var.subdomain_api_prefix}.${aws_route53_zone.main.name}"
+  env             = var.env
+  certificate_arn = aws_acm_certificate.main.arn
 }
 
 module "vpn" {
@@ -87,7 +90,7 @@ module "vpn" {
   vpc_id              = module.soa.vpcs["master"].id
   public_subnet_id    = element(values(module.soa.public_subnets).*.id, 1)
   zone_id             = aws_route53_zone.main.zone_id
-  domain              = "${var.vpn_subdomain_prefix}.${aws_route53_zone.main.name}"
+  domain              = "${var.subdomain_vpn_prefix}.${aws_route53_zone.main.name}"
   email               = local.devops_email
   admin_password      = var.vpn_admin_password
   dev_password        = var.vpn_dev_password

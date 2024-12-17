@@ -1,4 +1,4 @@
-name: &service_name nginx-service
+name: &service_name gateway-service
 port: &port 80
 vpc: master
 subnet_group: main
