@@ -55,6 +55,15 @@ resource "aws_route53_record" "certificate_validation" {
 # Modules
 #
 
+module "appset" {
+  source           = "./modules/appset"
+  config_dir       = "${path.module}/config/apps"
+  zone_id          = aws_route53_zone.main.zone_id
+  domain           = aws_route53_zone.main.name
+  s3_bucket_domain = module.s3.buckets["public-assets"].bucket_regional_domain_name
+  certificate_arn  = aws_acm_certificate.main.arn
+}
+
 module "iam" {
   source     = "./modules/iam"
   config_dir = "${path.module}/config"

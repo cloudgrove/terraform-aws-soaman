@@ -65,6 +65,61 @@ Note: these two records are blockers to the creation of the VPN box and CloudFro
 By default, the OpenVPN setup comes with one admin user (`openvpn`) and one regular user (`dev`). Users can me managed via the OpenVPN portal at the environment-specific target subdomain (e.g. `https://vpn.alpha.cloudgrove.io`).
 
 
+# Apps
+
+The full list of configuration parameters for a hosted web app is as follows:
+```
+name: ... # example: `landing-site`
+subdomain: ... # defaults to the empty string
+path: ... # example: `/apps/landing-site/current`
+enabled: ... # defaults to `true`
+```
+
+
+# S3 buckets
+
+S3 buckets are specifed by their use case (i.e. "configs", "public assets", etc) instead of their name. The full S3 bucket name is then generated using the following pattern:
+```
+<prefix>.<environment>.<user-case>
+```
+
+Here are some examples:
+```
+cloudgrove.prod.configs
+cloudgrove.sandbox-2.archives
+cloudgrove-client-1.beta.public-assets
+```
+
+The full list of configuration parameters for a bucket creation is as follows:
+```
+name: ... # example: public-assets
+object_ownership: ... # defaults to `BucketOwnerPreferred`
+access:
+  acl: ... # defaults to `private`
+  block_public_acls: ... # defaults to `true`
+  block_public_policy: ... # defaults to `true`
+  ignore_public_acls: ... # defaults to `true`
+  restrict_public_buckets: ... # defaults to `true`
+cors:
+  allowed_methods:
+    - ...
+  allowed_origins:
+    - ...
+  allowed_headers:
+    - ...
+  expose_headers:
+    - ...
+  max_age_seconds: ...
+statements: ... # defaults to `null`
+  - sid: ...
+    principal: ...
+    effect: ...
+    actions: ...
+    resource: ...
+  - ...
+```
+
+
 # Access reuirements
 
 1. To allow a user to access Docker containers running in ECS via SSH (i.e. `aws ecs execute-command ... --command sh --interactive`), they should be assigned the following IAM policy:
