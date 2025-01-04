@@ -5,6 +5,12 @@ locals {
     for file_path in local.microservice_file_paths :
     try(yamldecode(file(file_path)).name, replace(file_path, "/${local.microservice_dir}|.yml/", "")) => yamldecode(file(file_path))
   }
+  microservice_queues = merge(flatten([
+    for microservice, microservice_config in local.microservice_configs : {
+      for queue, queue_config in merge(try(microservice_config.config.default.resources.sqs, {}), try(microservice_config.config[var.env].resources.sqs, {})) :
+      "${microservice}-${queue}" => queue_config
+    }
+  ])...)
 }
 
 #
@@ -68,7 +74,7 @@ resource "aws_ecs_task_definition" "all" {
 
       efs_volume_configuration {
         file_system_id      = aws_efs_file_system.cluster[each.value.cluster].id
-        root_directory      = "/" # "/ecs/${each.key}"
+        root_directory      = "/"
         transit_encryption  = "ENABLED"
 
         authorization_config {
@@ -198,6 +204,37 @@ resource "aws_efs_access_point" "microservice_efs" {
   tags = {
     Name = each.key
   }
+}
+
+#
+# SQS
+#
+
+resource "aws_sqs_queue" "microservice" {
+  for_each = local.microservice_queues
+
+  name                      = try(each.value.fifo_queue, false) ? "${each.key}.fifo" : each.key
+  fifo_queue                = try(each.value.fifo_queue, false)
+  delay_seconds             = try(each.value.delay_seconds, 0)
+  max_message_size          = try(each.value.max_message_size, 262144)
+  message_retention_seconds = try(each.value.message_retention_seconds, 1209600)
+  receive_wait_time_seconds = try(each.value.receive_wait_time_seconds, 0)
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.microservice_dlq[each.key].arn
+    maxReceiveCount     = try(each.value.max_receive_count, 5)
+  })
+}
+
+resource "aws_sqs_queue" "microservice_dlq" {
+  for_each = local.microservice_queues
+
+  name                      = try(each.value.fifo_queue, false) ? "${each.key}-dlq.fifo" : "${each.key}-dlq"
+  fifo_queue                = try(each.value.fifo_queue, false)
+  delay_seconds             = 0
+  max_message_size          = 262144
+  message_retention_seconds = 1209600
+  receive_wait_time_seconds = 0
 }
 
 #

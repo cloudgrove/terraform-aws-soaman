@@ -120,6 +120,21 @@ statements: ... # defaults to `null`
 ```
 
 
+# Microservice queues
+
+The full list of configuration parameters for a microservice queue is as follows:
+```
+sqs:
+  main-queue:
+    fifo_queue: ... # defaults to `false`
+    delay_seconds: ... # defaults to 0
+    max_message_size: ... # defaults to 0
+    message_retention_seconds: ... # defaults to 262144
+    receive_wait_time_seconds: ... # defaults to 1209600
+    max_receive_count: ... # defaults to 5
+```
+
+
 # Access reuirements
 
 1. To allow a user to access Docker containers running in ECS via SSH (i.e. `aws ecs execute-command ... --command sh --interactive`), they should be assigned the following IAM policy:
