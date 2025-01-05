@@ -120,7 +120,7 @@ statements: ... # defaults to `null`
 ```
 
 
-# Microservice queues
+# Microservice resources
 
 The full list of configuration parameters for a microservice queue is as follows:
 ```
@@ -133,6 +133,23 @@ sqs:
     receive_wait_time_seconds: ... # defaults to 1209600
     max_receive_count: ... # defaults to 5
 ```
+
+Note that for microservice envrironment variables and S3 paths (in the YAML config file), it is possible to avoid hardcoding the environement name (e.g. `alpha`, `prod`, etc) by typing `${env}`. Here is an example combining multiple common cases:
+```
+variables:
+  AWS_S3_BUCKET_FOR_DOCUMENTS: cloudgrove.${env}.archives
+  AWS_S3_BUCKET_FOR_PUBLIC_CONTENT: &pc_bucket cloudgrove.${env}.public-assets
+  POSTGRES_HOST: content-service.${env}.cloudgrove.io
+resources:
+  s3:
+    read_write:
+      - cloudgrove.${env}.archives/gateway-service
+      - cloudgrove.${env}.archives/shared
+    read_only:
+      - *pc_bucket
+```
+
+By not hardcoding the environment name, the `default` config is inherited by the other environments that are specified in the microservice config file.
 
 
 # Access reuirements

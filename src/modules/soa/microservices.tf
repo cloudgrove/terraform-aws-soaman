@@ -104,7 +104,7 @@ resource "aws_ecs_task_definition" "all" {
       environment = [
         for k, v in merge(each.value.config.default.variables, try(each.value.config[var.env].variables, {})) : {
           name  = k,
-          value = tostring(v)
+          value = replace(tostring(v), "$${env}", var.env)
         }
       ],
       mountPoints = contains(keys(each.value.config.default), "efs") ? [{
@@ -271,8 +271,8 @@ data "aws_iam_policy_document" "microservice" {
       ]
       resources = flatten([
       for path in statement.value.read_only : [
-        "arn:aws:s3:::${path}",
-        "arn:aws:s3:::${path}/*",
+        "arn:aws:s3:::${replace(path, "$${env}", var.env)}",
+        "arn:aws:s3:::${replace(path, "$${env}", var.env)}/*",
       ]
     ])
     }
@@ -295,8 +295,8 @@ data "aws_iam_policy_document" "microservice" {
       ]
       resources = flatten([
       for path in statement.value.read_write : [
-        "arn:aws:s3:::${path}",
-        "arn:aws:s3:::${path}/*",
+        "arn:aws:s3:::${replace(path, "$${env}", var.env)}",
+        "arn:aws:s3:::${replace(path, "$${env}", var.env)}/*",
       ]
     ])
     }

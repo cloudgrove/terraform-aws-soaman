@@ -17,6 +17,8 @@ config:
     variables:
       SERVICE_NAME: *service_name
       PORT: *port
+      AWS_S3_BUCKET_FOR_DOCUMENTS: cloudgrove.${env}.archives
+      AWS_S3_BUCKET_FOR_PUBLIC_CONTENT: &pc_bucket cloudgrove.${env}.public-assets
     resources:
       sqs:
         low:
@@ -26,10 +28,10 @@ config:
           fifo_queue: true
       s3:
         read_write:
-          - cloudgrove.alpha.archives/gateway-service
-          - cloudgrove.alpha.archives/shared
+          - cloudgrove.${env}.archives/gateway-service
+          - cloudgrove.${env}.archives/shared
         read_only:
-          - cloudgrove.alpha.public-assets
+          - *pc_bucket
   beta:
     desired_count: 2
     task_definition:
