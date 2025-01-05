@@ -24,6 +24,12 @@ config:
         medium:
         high:
           fifo_queue: true
+      s3:
+        read_write:
+          - cloudgrove.alpha.archives/gateway-service
+          - cloudgrove.alpha.archives/shared
+        read_only:
+          - cloudgrove.alpha.public-assets
   beta:
     desired_count: 2
     task_definition:

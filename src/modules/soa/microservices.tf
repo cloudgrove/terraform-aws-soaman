@@ -258,7 +258,7 @@ data "aws_iam_policy_document" "microservice" {
 
   dynamic "statement" {
     for_each = {
-      for k, v in try(each.value.config[var.env], each.value.config.default) :
+      for k, v in try(each.value.config[var.env].resources, each.value.config.default.resources) :
       k => v if k == "s3" && try(v.read_only, null) != null
     }
 
@@ -280,7 +280,7 @@ data "aws_iam_policy_document" "microservice" {
 
   dynamic "statement" {
     for_each = {
-      for k, v in try(each.value.config[var.env], each.value.config.default) :
+      for k, v in try(each.value.config[var.env].resources, each.value.config.default.resources) :
       k => v if k == "s3" && try(v.read_write, null) != null
     }
 
