@@ -17,6 +17,13 @@ config:
     variables:
       SERVICE_NAME: *service_name
       PORT: *port
+    resources:
+      sqs:
+        low:
+          delay_seconds: 3
+        medium:
+        high:
+          fifo_queue: true
   beta:
     desired_count: 2
     task_definition:
