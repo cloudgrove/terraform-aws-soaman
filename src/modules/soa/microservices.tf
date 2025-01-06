@@ -8,7 +8,7 @@ locals {
   microservice_queues = merge(flatten([
     for microservice, microservice_config in local.microservice_configs : {
       for queue, queue_config in merge(try(microservice_config.config.default.resources.sqs, {}), try(microservice_config.config[var.env].resources.sqs, {})) :
-      "${microservice}-${queue}" => queue_config
+      "${microservice}-${queue}" => merge(queue_config, { name = try(queue_config.fifo_queue, false) ? "${microservice}-${queue}.fifo" : "${microservice}-${queue}" })
     }
   ])...)
 }
@@ -213,7 +213,7 @@ resource "aws_efs_access_point" "microservice_efs" {
 resource "aws_sqs_queue" "microservice" {
   for_each = local.microservice_queues
 
-  name                      = try(each.value.fifo_queue, false) ? "${each.key}.fifo" : each.key
+  name                      = each.value.name
   fifo_queue                = try(each.value.fifo_queue, false)
   delay_seconds             = try(each.value.delay_seconds, 0)
   max_message_size          = try(each.value.max_message_size, 262144)
@@ -229,7 +229,7 @@ resource "aws_sqs_queue" "microservice" {
 resource "aws_sqs_queue" "microservice_dlq" {
   for_each = local.microservice_queues
 
-  name                      = try(each.value.fifo_queue, false) ? "${each.key}-dlq.fifo" : "${each.key}-dlq"
+  name                      = replace(each.value.name, each.key, "${each.key}-dlq")
   fifo_queue                = try(each.value.fifo_queue, false)
   delay_seconds             = 0
   max_message_size          = 262144
@@ -247,6 +247,8 @@ resource "aws_iam_user" "microservice" {
   name = each.key
   path = "/ecs/"
 }
+
+data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "microservice" {
   for_each = local.microservice_configs
@@ -270,11 +272,11 @@ data "aws_iam_policy_document" "microservice" {
         "s3:GetObject",
       ]
       resources = flatten([
-      for path in statement.value.read_only : [
-        "arn:aws:s3:::${replace(path, "$${env}", var.env)}",
-        "arn:aws:s3:::${replace(path, "$${env}", var.env)}/*",
-      ]
-    ])
+        for path in statement.value.read_only : [
+          "arn:aws:s3:::${replace(path, "$${env}", var.env)}",
+          "arn:aws:s3:::${replace(path, "$${env}", var.env)}/*",
+        ]
+      ])
     }
   }
 
@@ -294,11 +296,34 @@ data "aws_iam_policy_document" "microservice" {
         "s3:DeleteObject",
       ]
       resources = flatten([
-      for path in statement.value.read_write : [
-        "arn:aws:s3:::${replace(path, "$${env}", var.env)}",
-        "arn:aws:s3:::${replace(path, "$${env}", var.env)}/*",
+        for path in statement.value.read_write : [
+          "arn:aws:s3:::${replace(path, "$${env}", var.env)}",
+          "arn:aws:s3:::${replace(path, "$${env}", var.env)}/*",
+        ]
+      ])
+    }
+  }
+
+  dynamic "statement" {
+    for_each = {
+      for k, v in try(each.value.config[var.env].resources, each.value.config.default.resources) :
+      k => v if k == "sqs" && try(v, null) != null
+    }
+
+    content {
+      sid    = "SqsReadWrite"
+      effect = "Allow"
+      actions = [
+        "sqs:SendMessage",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
       ]
-    ])
+      resources = flatten([
+        for k, v in statement.value : [
+          "arn:aws:sqs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${local.microservice_queues["${each.key}-${k}"].name}",
+        ]
+      ])
     }
   }
 }
