@@ -67,7 +67,7 @@ resource "aws_ecs_task_definition" "all" {
   requires_compatibilities = ["FARGATE"]
 
   dynamic "volume" {
-    for_each = can(aws_efs_access_point.microservice_efs[each.key]) ? [1] : []
+    for_each = can(aws_efs_access_point.microservice[each.key]) ? [1] : []
 
     content {
       name = "primary"
@@ -78,7 +78,7 @@ resource "aws_ecs_task_definition" "all" {
         transit_encryption  = "ENABLED"
 
         authorization_config {
-          access_point_id = aws_efs_access_point.microservice_efs[each.key].id
+          access_point_id = aws_efs_access_point.microservice[each.key].id
           iam             = "ENABLED"
         }
       }
@@ -107,11 +107,13 @@ resource "aws_ecs_task_definition" "all" {
           value = replace(tostring(v), "$${env}", var.env)
         }
       ],
-      mountPoints = contains(keys(each.value.config.default), "efs") ? [{
-        sourceVolume  = "primary"
-        containerPath = each.value.config.default.efs.container_path
-        readOnly      = false
-      }] : [],
+      mountPoints = [
+        for path in concat(try(each.value.config.default.resources.efs, []), try(each.value.config[var.env].resources.efs, [])) : {
+          sourceVolume  = "primary"
+          containerPath = path
+          readOnly      = false
+        }
+      ],
     }
   )])
 }
@@ -178,10 +180,10 @@ resource "aws_vpc_security_group_ingress_rule" "microservice" {
 # EFS
 #
 
-resource "aws_efs_access_point" "microservice_efs" {
+resource "aws_efs_access_point" "microservice" {
   for_each = {
     for microservice, config in local.microservice_configs :
-    microservice => config if contains(keys(config.config.default), "efs")
+    microservice => config if contains(keys(merge(try(config.config.default.resources, {}), try(config.config[var.env].resources, {}))), "efs")
   }
 
   file_system_id = aws_efs_file_system.cluster[each.value.cluster].id
