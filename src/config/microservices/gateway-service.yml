@@ -20,6 +20,9 @@ config:
       AWS_S3_BUCKET_FOR_DOCUMENTS: cloudgrove.${env}.archives
       AWS_S3_BUCKET_FOR_PUBLIC_CONTENT: &pc_bucket cloudgrove.${env}.public-assets
     resources:
+      efs:
+        - /var/gateway-service
+        - /var/shared
       sqs:
         low:
           delay_seconds: 3
