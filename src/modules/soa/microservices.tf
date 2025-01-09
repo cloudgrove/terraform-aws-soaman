@@ -337,8 +337,9 @@ resource "aws_sqs_queue" "microservice_dlq" {
 resource "aws_iam_user" "microservice" {
   for_each = local.microservice_configs
 
-  name = each.key
-  path = "/ecs/"
+  name          = each.key
+  path          = "/ecs/"
+  force_destroy = true
 }
 
 data "aws_caller_identity" "current" {}

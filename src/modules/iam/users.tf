@@ -16,7 +16,8 @@ locals {
 resource "aws_iam_user" "all" {
   for_each = local.user_configs
 
-  name     = each.value.name
+  name          = each.value.name
+  force_destroy = true
 }
 
 data "aws_iam_policy_document" "custom_policies" {
