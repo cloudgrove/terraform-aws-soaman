@@ -6,9 +6,27 @@ This repo hosts the Terraform functionality and its associated YAML configs to p
 
 1. Docker container management using ECS
 
+1. Cost-effective load balancing using ALB
+
+1. Assembled microservice-specific resources in one place
+
+1. Restricted access to microservice resources
+
+1. Auto-generated DNS routes
+
+1. CDN-enabled traffic
+
 1. Shared file systems using EFS
 
 1. VPN access using OpenVPN
+
+1. KMS-based decryption
+
+1. Managed users and their access via YAML
+
+1. Email-enabled service using SES
+
+1. S3-hosted web apps
 
 
 # Before you run Terraform
