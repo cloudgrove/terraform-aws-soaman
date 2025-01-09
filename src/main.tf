@@ -61,14 +61,14 @@ module "soa" {
 }
 
 module "vpn" {
-  source              = "./modules/openvpn"
-  vpc_id              = module.soa.vpcs["master"].id
-  public_subnet_id    = element(values(module.soa.public_subnets).*.id, 1)
-  zone_id             = module.dns.zone_id
-  domain              = "${var.subdomain_vpn_prefix}.${local.subdomain}"
-  email               = local.devops_email
-  admin_password      = var.vpn_admin_password
-  dev_password        = var.vpn_dev_password
-  ssh_key_name        = aws_key_pair.devops.key_name
-  efs_security_groups = module.soa.cluster_security_groups
+  source                 = "./modules/openvpn"
+  vpc_id                 = module.soa.vpcs["master"].id
+  public_subnet_id       = element(values(module.soa.public_subnets).*.id, 1)
+  zone_id                = module.dns.zone_id
+  domain                 = "${var.subdomain_vpn_prefix}.${local.subdomain}"
+  email                  = local.devops_email
+  admin_password         = var.vpn_admin_password
+  dev_password           = var.vpn_dev_password
+  ssh_key_name           = aws_key_pair.devops.key_name
+  target_security_groups = module.soa.security_groups
 }

@@ -92,13 +92,13 @@ resource "aws_security_group" "openvpn" {
   }
 }
 
-resource "aws_security_group_rule" "openvpn_to_efs" {
-  for_each = var.efs_security_groups
+resource "aws_security_group_rule" "openvpn" {
+  for_each = var.target_security_groups
 
   type                     = "ingress"
   protocol                 = "tcp"
-  from_port                = 2049
-  to_port                  = 2049
+  from_port                = 2000
+  to_port                  = 6000
   security_group_id        = each.value.id
   source_security_group_id = aws_security_group.openvpn.id
 }

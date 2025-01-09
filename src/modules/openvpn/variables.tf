@@ -32,12 +32,6 @@ variable "email" {
   type        = string
 }
 
-variable "efs_security_groups" {
-  description = "A map containing the security groups targeting EFS volumes"
-  type        = map
-  default     = {}
-}
-
 variable "private_subnet_cidr" {
   description = "The CIDR block representing the private subnet to which VPN clients should have access"
   type        = string
@@ -52,6 +46,12 @@ variable "public_subnet_id" {
 variable "ssh_key_name" {
   description = "The AWS name of the target SSH key"
   type        = string
+}
+
+variable "target_security_groups" {
+  description = "A map containing the security groups whose resources are to be accessed"
+  type        = map
+  default     = {}
 }
 
 variable "vpc_id" {
