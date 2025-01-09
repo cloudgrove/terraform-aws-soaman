@@ -19,6 +19,8 @@ Log into your target domain name registrar and be ready to:
     * `TF_VAR_aws_access_key`
     * `TF_VAR_aws_secret_key`
 
+1. Create a new multi-region KMS key in each environment account with the name `default` and grant the `terraform` IAM user access to it.
+
 
 # While Terraform is running
 
@@ -122,7 +124,28 @@ statements: ... # defaults to `null`
 
 # Microservice resources
 
-The full list of configuration parameters for a microservice queue is as follows:
+The full list of supported configuration parameters for a microservice RDS instance is as follows:
+```
+rds:
+  my-db:
+    engine: ...
+    engine_version: ...
+    instance_class: ... # defaults to `t4g.micro`
+    allocated_storage: ... # defaults to 10
+    db_name: ... # defaults to `main`
+    username: ... # defaults to `root`
+    password: ... # must be KMS-encrypted, and optionally prefixed with `kms_`
+    multi_az: ... # defaults to `true`
+    parameter_group_name: ... # defaults to `null`
+    storage_encrypted: ... # defaults to `true`
+    max_allocated_storage: ... # defaults to 1000
+    backup_retention_period: ... # defaults to 30
+    performance_insights_enabled: ... # defaults to `true`
+    skip_final_snapshot: ... # defaults to `true`
+    apply_immediately: ... # defaults to `true`
+```
+
+The full list of supported configuration parameters for a microservice queue is as follows:
 ```
 sqs:
   main-queue:

@@ -11,6 +11,12 @@ locals {
       "${microservice}-${queue}" => merge(queue_config, { name = try(queue_config.fifo_queue, false) ? "${microservice}-${queue}.fifo" : "${microservice}-${queue}" })
     }
   ])...)
+  microservice_rds_instances = merge(flatten([
+    for microservice, microservice_config in local.microservice_configs : {
+      for instance, instance_config in merge(try(microservice_config.config.default.resources.rds, {}), try(microservice_config.config[var.env].resources.rds, {})) :
+      "${microservice}-${instance}" => merge(try(microservice_config.config.default.resources.rds[instance], {}), instance_config, { microservice = microservice, vpc = microservice_config.vpc })
+    }
+  ])...)
 }
 
 #
@@ -206,6 +212,91 @@ resource "aws_efs_access_point" "microservice" {
   tags = {
     Name = each.key
   }
+}
+
+#
+# RDS
+#
+
+locals {
+  database_ports = {
+    aurora = 3306
+    aurora-mysql = 3306
+    aurora-postgresql = 5432
+    mysql = 3306
+    mariadb = 3306
+    postgres = 5432
+    oracle-se = 1521
+    oracle-se1 = 1521
+    oracle-se2 = 1521
+    oracle-ee = 1521
+    sqlserver-ee = 1433
+    sqlserver-se = 1433
+    sqlserver-ex = 1433
+    sqlserver-web = 1433
+  }
+}
+
+data "aws_kms_secrets" "microservice_database" {
+  for_each = local.microservice_rds_instances
+
+  secret {
+    name    = "password"
+    payload = replace(each.value.password, "kms_", "")
+  }
+}
+
+resource "aws_db_instance" "microservice_database" {
+  for_each = local.microservice_rds_instances
+
+  identifier        = each.key
+  engine            = each.value.engine
+  engine_version    = each.value.engine_version
+  instance_class    = try(each.value.instance_class, "t4g.micro")
+  allocated_storage = try(each.value.allocated_storage, 10)
+  db_name           = try(each.value.db_name, "main")
+  username          = try(each.value.username, "root")
+  password          = data.aws_kms_secrets.microservice_database[each.key].plaintext["password"]
+  multi_az          = true
+
+  parameter_group_name         = try(each.value.parameter_group_name, null)
+  storage_encrypted            = try(each.value.storage_encrypted, true)
+  max_allocated_storage        = try(each.value.max_allocated_storage, 1000)
+  backup_retention_period      = try(each.value.backup_retention_period, 30)
+  performance_insights_enabled = try(each.value.performance_insights_enabled, true)
+  skip_final_snapshot          = try(each.value.skip_final_snapshot, true)
+  apply_immediately            = try(each.value.apply_immediately, true)
+
+  db_subnet_group_name   = aws_db_subnet_group.private[each.value.vpc].name
+  vpc_security_group_ids = [aws_security_group.microservice_database[each.key].id]
+}
+
+resource "aws_security_group" "microservice_database" {
+  for_each = local.microservice_rds_instances
+
+  name   = "ecs-${each.value.vpc}.${each.key}"
+  vpc_id = aws_vpc.all[each.value.vpc].id
+}
+
+resource "aws_security_group_rule" "microservice_database" {
+  for_each = local.microservice_rds_instances
+
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = local.database_ports[each.value.engine]
+  to_port                  = local.database_ports[each.value.engine]
+  security_group_id        = aws_security_group.microservice_database[each.key].id
+  source_security_group_id = aws_security_group.microservice[each.value.microservice].id
+}
+
+resource "aws_route53_record" "microservice_database" {
+  for_each = local.microservice_rds_instances
+
+  zone_id = aws_route53_zone.internal[each.value.vpc].id
+  name    = each.key
+  type    = "CNAME"
+  ttl     = "30"
+  records = [aws_db_instance.microservice_database[each.key].address]
 }
 
 #
