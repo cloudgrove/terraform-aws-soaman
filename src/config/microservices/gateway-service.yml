@@ -19,10 +19,19 @@ config:
       PORT: *port
       AWS_S3_BUCKET_FOR_DOCUMENTS: cloudgrove.${env}.archives
       AWS_S3_BUCKET_FOR_PUBLIC_CONTENT: &pc_bucket cloudgrove.${env}.public-assets
+      POSTGRES_HOST: gateway-service-postgres.master
+      POSTGRES_USERNAME: root
+      POSTGRES_PASSWORD: &default_pg_pass kms_AQICAHjYdH1UxKqA9GWR7DagdD0uKERhRQZZkDpVM4wEn2l/gQHRh+zGk2Gg+aF8pXibLn3IAAAAZjBkBgkqhkiG9w0BBwagVzBVAgEAMFAGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMffBhCZjMsGx3WJIgAgEQgCP9tPye94Rh9itGgWxNLcuVovdu6mLrrJIBsTDpkhBK633xiA==
+      POSTGRES_DATABASE: main
     resources:
       efs:
         - /var/gateway-service
         - /var/shared
+      rds:
+        postgres:
+          engine: postgres
+          engine_version: 15.7
+          password: *default_pg_pass
       sqs:
         low:
           delay_seconds: 3
