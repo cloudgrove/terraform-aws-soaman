@@ -31,7 +31,7 @@ resource "aws_instance" "openvpn" {
     Name = "vpn.public"
   }
 
-  user_data = templatefile("modules/openvpn/install.sh", {
+  user_data = templatefile("${path.module}/install.sh", {
     admin_username = var.admin_username
     admin_password = var.admin_password
     dev_username   = var.dev_username
