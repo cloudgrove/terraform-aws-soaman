@@ -17,7 +17,7 @@ resource "aws_key_pair" "devops" {
 #
 
 module "appset" {
-  source           = "./modules/appset"
+  source           = "../../modules/appset"
   config_dir       = "${path.module}/config/apps"
   zone_id          = module.dns.zone_id
   domain           = local.subdomain
@@ -26,24 +26,24 @@ module "appset" {
 }
 
 module "dns" {
-  source = "./modules/dns"
+  source = "../../modules/dns"
   domain = local.subdomain
 }
 
 module "iam" {
-  source     = "./modules/iam"
+  source     = "../../modules/iam"
   config_dir = "${path.module}/config"
 }
 
 module "s3" {
-  source     = "./modules/s3"
+  source     = "../../modules/s3"
   config_dir = "${path.module}/config"
   env        = var.env
   prefix     = var.s3_prefix
 }
 
 module "ses" {
-  source     = "./modules/ses"
+  source     = "../../modules/ses"
   aws_region = var.aws_region
   zone_id    = module.dns.zone_id
   domain     = local.subdomain
@@ -51,7 +51,7 @@ module "ses" {
 }
 
 module "soa" {
-  source          = "./modules/soa"
+  source          = "../../modules/soa"
   config_dir      = "${path.module}/config"
   aws_region      = var.aws_region
   zone_id         = module.dns.zone_id
@@ -61,7 +61,7 @@ module "soa" {
 }
 
 module "vpn" {
-  source                 = "./modules/openvpn"
+  source                 = "../../modules/openvpn"
   vpc_id                 = module.soa.vpcs["master"].id
   public_subnet_id       = element(values(module.soa.public_subnets).*.id, 1)
   zone_id                = module.dns.zone_id
