@@ -16,7 +16,7 @@ resource "aws_lb_listener" "gateway_service_nlb" {
 }
 
 resource "aws_lb_target_group" "gateway_service_alb" {
-  name        = "gateway-service-alb"
+  name        = "${var.gateway_service_name}-alb"
   vpc_id      = aws_vpc.all[local.gateway_vpc].id
   target_type = "alb"
   protocol    = "TCP"
@@ -47,7 +47,7 @@ resource "aws_lb_listener" "gateway_service" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.microservice["gateway-service"].arn
+    target_group_arn = aws_lb_target_group.microservice[var.gateway_service_name].arn
   }
 }
 
@@ -93,7 +93,7 @@ resource "aws_cloudfront_distribution" "gateway_service" {
   http_version        = "http2"
   default_root_object = ""
   price_class         = "PriceClass_All"
-  comment             = "gateway-service"
+  comment             = var.gateway_service_name
 
   aliases = [var.domain]
 
@@ -122,8 +122,7 @@ resource "aws_cloudfront_distribution" "gateway_service" {
 }
 
 resource "aws_cloudfront_cache_policy" "gateway_service" {
-  name    = "gateway-service"
-  comment = "TTL settings for minimal caching for gateway-service"
+  name    = var.gateway_service_name
 
   default_ttl = 200
   max_ttl     = 200
@@ -157,8 +156,7 @@ resource "aws_cloudfront_cache_policy" "gateway_service" {
 }
 
 resource "aws_cloudfront_origin_request_policy" "gateway_service" {
-  name    = "gateway-service"
-  comment = "Inject a verification host header in origin requests"
+  name    = var.gateway_service_name
 
   cookies_config {
     cookie_behavior = "none"
