@@ -3,6 +3,7 @@ cidr_prefix: '10.0'
 availability_zones:
   - a
   - b
+  - c
 subnet_groups:
   private:
     main:
