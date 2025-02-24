@@ -172,9 +172,7 @@ resource "aws_cloudfront_origin_request_policy" "gateway_service" {
 }
 
 resource "aws_route53_record" "gateway_service" {
-  for_each = toset([var.domain])
-
-  name    = each.key
+  name    = var.domain
   zone_id = var.zone_id
   type    = "A"
 
