@@ -175,13 +175,13 @@ resource "aws_db_subnet_group" "private" {
 }
 
 #
-# Application load balancers
+# Load balancers
 #
 
 resource "aws_lb" "alb" {
   for_each = aws_vpc.all
 
-  name               = each.key
+  name               = "${each.key}-alb"
   load_balancer_type = "application"
   internal           = true
   subnets            = [for subnet in aws_subnet.private : subnet.id if subnet.vpc_id == each.value.id]
@@ -226,7 +226,7 @@ resource "aws_route53_record" "alb" {
 resource "aws_lb" "nlb" {
   for_each = aws_vpc.all
 
-  name               = each.key
+  name               = "${each.key}-nlb"
   internal           = false
   load_balancer_type = "network"
   subnets            = [for subnet in aws_subnet.public : subnet.id if subnet.vpc_id == each.value.id]
