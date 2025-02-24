@@ -252,7 +252,7 @@ resource "aws_db_instance" "microservice_database" {
   identifier        = each.key
   engine            = each.value.engine
   engine_version    = each.value.engine_version
-  instance_class    = try(each.value.instance_class, "t4g.micro")
+  instance_class    = try(each.value.instance_class, "db.t4g.micro")
   allocated_storage = try(each.value.allocated_storage, 10)
   db_name           = try(each.value.db_name, "main")
   username          = try(each.value.username, "root")
