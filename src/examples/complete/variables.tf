@@ -47,12 +47,6 @@ variable "s3_prefix" {
   default     = "cloudgrove"
 }
 
-variable "subdomain_api_prefix" {
-  description = "The API subdomain prefix"
-  type        = string
-  default     = "api"
-}
-
 variable "subdomain_vpn_prefix" {
   description = "The VPN subdomain prefix"
   type        = string

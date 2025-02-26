@@ -14,7 +14,11 @@ locals {
   microservice_rds_instances = merge(flatten([
     for microservice, microservice_config in local.microservice_configs : {
       for instance, instance_config in merge(try(microservice_config.config.default.resources.rds, {}), try(microservice_config.config[var.env].resources.rds, {})) :
-      "${microservice}-${instance}" => merge(try(microservice_config.config.default.resources.rds[instance], {}), instance_config, { microservice = microservice, vpc = microservice_config.vpc })
+      "${microservice}-${instance}" => merge(try(microservice_config.config.default.resources.rds[instance], {}), instance_config, {
+        microservice = microservice
+        cluster = microservice_config.cluster
+        vpc = microservice_config.vpc
+      })
     }
   ])...)
 }
@@ -46,7 +50,7 @@ resource "aws_ecs_service" "all" {
         }) : aws_subnet.private[key]
       ] : subnet.id
     ]
-    security_groups = [aws_security_group.alb[each.value.vpc].id, aws_security_group.microservice[each.key].id]
+    security_groups = [aws_security_group.alb[each.value.cluster].id, aws_security_group.microservice[each.key].id]
   }
 
   load_balancer {
@@ -108,7 +112,7 @@ resource "aws_ecs_task_definition" "all" {
     try(each.value.config[var.env].task_definition, {}),
     {
       environment = [
-        for k, v in merge(each.value.config.default.variables, try(each.value.config[var.env].variables, {})) : {
+        for k, v in merge(try(each.value.config.default.variables, {}), try(each.value.config[var.env].variables, {})) : {
           name  = k,
           value = replace(tostring(v), "$${env}", var.env)
         }
@@ -127,7 +131,7 @@ resource "aws_ecs_task_definition" "all" {
 resource "aws_security_group" "microservice" {
   for_each = local.microservice_configs
 
-  name        = "ecs-${each.value.vpc}.${each.key}"
+  name        = "soa-${each.value.vpc}.${each.value.cluster}.${each.key}"
   vpc_id      = aws_vpc.all[each.value.vpc].id
 }
 
@@ -162,7 +166,7 @@ resource "aws_lb_target_group" "microservice" {
 resource "aws_lb_listener" "microservice" {
   for_each = local.microservice_configs
 
-  load_balancer_arn = aws_lb.alb[each.value.vpc].arn
+  load_balancer_arn = aws_lb.alb[each.value.cluster].arn
   protocol          = "HTTP"
   port              = each.value.port
 
@@ -175,7 +179,7 @@ resource "aws_lb_listener" "microservice" {
 resource "aws_vpc_security_group_ingress_rule" "microservice" {
   for_each = local.microservice_configs
 
-  security_group_id = aws_security_group.alb[each.value.vpc].id
+  security_group_id = aws_security_group.alb[each.value.cluster].id
   ip_protocol       = "tcp"
   from_port         = each.value.port
   to_port           = each.value.port
@@ -274,7 +278,7 @@ resource "aws_db_instance" "microservice_database" {
 resource "aws_security_group" "microservice_database" {
   for_each = local.microservice_rds_instances
 
-  name   = "ecs-${each.value.vpc}.${each.key}"
+  name   = "soa-${each.value.vpc}.${each.value.cluster}.${each.key}"
   vpc_id = aws_vpc.all[each.value.vpc].id
 }
 

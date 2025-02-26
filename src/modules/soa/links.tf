@@ -1,58 +1,7 @@
-locals {
-  gateway_vpc = local.microservice_configs[var.gateway_service_name].vpc
-}
-
-resource "aws_lb_listener" "gateway_service_nlb" {
-  for_each = aws_lb.nlb
-
-  load_balancer_arn = aws_lb.nlb[each.key].arn
-  protocol          = "TCP"
-  port              = 443
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.gateway_service_alb.arn
-  }
-}
-
-resource "aws_lb_target_group" "gateway_service_alb" {
-  name        = "${var.gateway_service_name}-alb"
-  vpc_id      = aws_vpc.all[local.gateway_vpc].id
-  target_type = "alb"
-  protocol    = "TCP"
-  port        = 443
-
-  health_check {
-    protocol            = "HTTPS"
-    healthy_threshold   = 3
-    unhealthy_threshold = 2
-    interval            = 30
-    timeout             = 3
-  }
-}
-
-resource "aws_lb_target_group_attachment" "gateway_service_alb" {
-  target_id        = aws_lb.alb[local.gateway_vpc].id
-  target_group_arn = aws_lb_target_group.gateway_service_alb.arn
-
-  depends_on = [aws_lb_listener.gateway_service]
-}
-
-resource "aws_lb_listener" "gateway_service" {
-  load_balancer_arn = aws_lb.alb[local.gateway_vpc].arn
-  port              = 443
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = var.certificate_arn
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.microservice[var.gateway_service_name].arn
-  }
-}
-
 resource "aws_lb_listener_rule" "admin_path_block" {
-  listener_arn = aws_lb_listener.gateway_service.arn
+  for_each = local.cluster_configs
+
+  listener_arn = aws_lb_listener.entrypoint[each.key].arn
   priority     = 1
 
   action {
@@ -75,10 +24,67 @@ resource "aws_lb_listener_rule" "admin_path_block" {
   }
 }
 
-resource "aws_cloudfront_distribution" "gateway_service" {
+resource "aws_lb_listener" "entrypoint" {
+  for_each = local.cluster_configs
+
+  load_balancer_arn = aws_lb.alb[each.key].arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = var.certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.microservice[each.value.entrypoint].arn
+  }
+}
+
+resource "aws_lb_target_group_attachment" "link" {
+  for_each = local.cluster_configs
+
+  target_id        = aws_lb.alb[each.key].id
+  target_group_arn = aws_lb_target_group.link[each.key].arn
+
+  depends_on = [aws_lb_listener.entrypoint]
+}
+
+resource "aws_lb_target_group" "link" {
+  for_each = local.cluster_configs
+
+  name        = aws_lb.alb[each.key].name
+  vpc_id      = aws_vpc.all[each.value.vpc].id
+  target_type = "alb"
+  protocol    = "TCP"
+  port        = 443
+
+  health_check {
+    protocol            = "HTTPS"
+    healthy_threshold   = 3
+    unhealthy_threshold = 2
+    interval            = 30
+    timeout             = 3
+  }
+}
+
+resource "aws_lb_listener" "link" {
+  for_each = local.cluster_configs
+
+  load_balancer_arn = aws_lb.nlb[each.key].arn
+  protocol          = "TCP"
+  port              = 443
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.link[each.key].arn
+  }
+}
+
+resource "aws_cloudfront_distribution" "link" {
+  for_each = local.cluster_configs
+
   origin {
-    domain_name = aws_lb.nlb[local.gateway_vpc].dns_name
-    origin_id   = var.domain
+    domain_name = aws_lb.nlb[each.key].dns_name
+    origin_id   = local.cluster_domains[each.key]
 
     custom_origin_config {
       http_port              = 80
@@ -93,19 +99,19 @@ resource "aws_cloudfront_distribution" "gateway_service" {
   http_version        = "http2"
   default_root_object = ""
   price_class         = "PriceClass_All"
-  comment             = var.gateway_service_name
+  comment             = local.cluster_domains[each.key]
 
-  aliases = [var.domain]
+  aliases = [local.cluster_domains[each.key]]
 
   default_cache_behavior {
     allowed_methods     = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods      = ["GET", "HEAD"]
-    target_origin_id    = var.domain
+    target_origin_id    = local.cluster_domains[each.key]
 
     viewer_protocol_policy    = "redirect-to-https"
     compress                  = true
-    cache_policy_id           = aws_cloudfront_cache_policy.gateway_service.id
-    origin_request_policy_id  = aws_cloudfront_origin_request_policy.gateway_service.id
+    cache_policy_id           = aws_cloudfront_cache_policy.link.id
+    origin_request_policy_id  = aws_cloudfront_origin_request_policy.link.id
   }
 
   viewer_certificate {
@@ -121,8 +127,8 @@ resource "aws_cloudfront_distribution" "gateway_service" {
   }
 }
 
-resource "aws_cloudfront_cache_policy" "gateway_service" {
-  name    = var.gateway_service_name
+resource "aws_cloudfront_cache_policy" "link" {
+  name    = "soa-link"
 
   default_ttl = 200
   max_ttl     = 200
@@ -155,8 +161,8 @@ resource "aws_cloudfront_cache_policy" "gateway_service" {
   }
 }
 
-resource "aws_cloudfront_origin_request_policy" "gateway_service" {
-  name    = var.gateway_service_name
+resource "aws_cloudfront_origin_request_policy" "link" {
+  name    = "soa-link"
 
   cookies_config {
     cookie_behavior = "none"
@@ -171,13 +177,15 @@ resource "aws_cloudfront_origin_request_policy" "gateway_service" {
   }
 }
 
-resource "aws_route53_record" "gateway_service" {
-  name    = var.domain
+resource "aws_route53_record" "link" {
+  for_each = local.cluster_configs
+
+  name    = local.cluster_domains[each.key]
   zone_id = var.zone_id
   type    = "A"
 
   alias {
-    name                   = aws_cloudfront_distribution.gateway_service.domain_name
+    name                   = aws_cloudfront_distribution.link[each.key].domain_name
     zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }

@@ -14,19 +14,13 @@ variable "config_dir" {
 }
 
 variable "domain" {
-  description = "The target domain name for the gateway"
+  description = "The base domain name for APIs"
   type        = string
 }
 
 variable "env" {
   description = "The target environment"
   type        = string
-}
-
-variable "gateway_service_name" {
-  description = "The name of the gateway service running in ECS"
-  type        = string
-  default     = "gateway-service"
 }
 
 variable "zone_id" {

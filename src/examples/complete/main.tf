@@ -55,7 +55,7 @@ module "soa" {
   config_dir      = "${path.module}/config"
   aws_region      = var.aws_region
   zone_id         = module.dns.zone_id
-  domain          = "${var.subdomain_api_prefix}.${local.subdomain}"
+  domain          = local.subdomain
   env             = var.env
   certificate_arn = module.dns.certificate_arn
 }

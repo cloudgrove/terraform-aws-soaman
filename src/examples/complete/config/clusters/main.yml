@@ -1,3 +1,5 @@
 name: main
 vpc: master
+subdomain: api
+entrypoint: gateway-service
 container_insights: enabled

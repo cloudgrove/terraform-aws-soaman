@@ -5,6 +5,10 @@ locals {
     for file_path in local.cluster_file_paths :
     try(yamldecode(file(file_path)).name, replace(file_path, "/${local.cluster_dir}|.yml/", "")) => yamldecode(file(file_path))
   }
+  cluster_domains = {
+    for cluster, cluster_config in local.cluster_configs :
+    cluster => "${try(cluster_config.subdomain, cluster_config.name)}.${var.domain}"
+  }
   cluster_subnets = merge(flatten([
     for cluster, cluster_config in local.cluster_configs : {
       for subnet, subnet_config in local.private_subnet_configs :
@@ -29,6 +33,86 @@ resource "aws_ecs_cluster" "all" {
 }
 
 #
+# Load balancers
+#
+
+resource "aws_lb" "alb" {
+  for_each = local.cluster_configs
+
+  name               = "${each.value.vpc}-${each.key}-alb"
+  load_balancer_type = "application"
+  internal           = true
+  subnets            = [for subnet in aws_subnet.private : subnet.id if subnet.vpc_id == aws_vpc.all[each.value.vpc].id]
+  security_groups    = [aws_security_group.alb[each.key].id]
+}
+
+resource "aws_security_group" "alb" {
+  for_each = local.cluster_configs
+
+  name   = "soa-${each.value.vpc}.${each.key}.alb"
+  vpc_id = aws_vpc.all[each.value.vpc].id
+
+  egress {
+    protocol         = "-1"
+    from_port        = 0
+    to_port          = 0
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb" {
+  for_each = local.cluster_configs
+
+  security_group_id = aws_security_group.alb[each.key].id
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_route53_record" "alb" {
+  for_each = local.cluster_configs
+
+  zone_id = aws_route53_zone.internal[each.value.vpc].id
+  name    = "${each.key}"
+  type    = "CNAME"
+  ttl     = "30"
+  records = [aws_lb.alb[each.key].dns_name]
+}
+
+resource "aws_lb" "nlb" {
+  for_each = local.cluster_configs
+
+  name               = "${each.value.vpc}-${each.key}-nlb"
+  internal           = false
+  load_balancer_type = "network"
+  subnets            = [for subnet in aws_subnet.public : subnet.id if subnet.vpc_id == aws_vpc.all[each.value.vpc].id]
+  security_groups    = [aws_security_group.nlb[each.key].id]
+}
+
+resource "aws_security_group" "nlb" {
+  for_each = local.cluster_configs
+
+  name   = "soa-${each.value.vpc}.${each.key}.nlb"
+  vpc_id = aws_vpc.all[each.value.vpc].id
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 443
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+#
 # EFS
 #
 
@@ -41,7 +125,7 @@ resource "aws_efs_file_system" "cluster" {
   throughput_mode  = "bursting"
 
   tags = {
-    Name = "ecs-${each.value.vpc}.${each.key}"
+    Name = "soa-${each.value.vpc}.${each.key}"
   }
 }
 
@@ -56,7 +140,7 @@ resource "aws_efs_mount_target" "cluster" {
 resource "aws_security_group" "cluster" {
   for_each = local.cluster_configs
 
-  name   = "ecs-${each.value.vpc}.${each.key}.efs"
+  name   = "soa-${each.value.vpc}.${each.key}.efs"
   vpc_id = aws_vpc.all[each.value.vpc].id
 }
 
