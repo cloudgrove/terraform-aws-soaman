@@ -135,14 +135,14 @@ resource "aws_cloudfront_distribution" "link" {
   aliases = [local.cluster_domains[each.key]]
 
   default_cache_behavior {
-    allowed_methods     = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods      = ["GET", "HEAD"]
-    target_origin_id    = local.cluster_domains[each.key]
+    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = local.cluster_domains[each.key]
 
-    viewer_protocol_policy    = "redirect-to-https"
-    compress                  = true
-    cache_policy_id           = aws_cloudfront_cache_policy.link.id
-    origin_request_policy_id  = aws_cloudfront_origin_request_policy.link.id
+    viewer_protocol_policy   = "redirect-to-https"
+    compress                 = true
+    cache_policy_id          = aws_cloudfront_cache_policy.link.id
+    origin_request_policy_id = aws_cloudfront_origin_request_policy.link.id
   }
 
   viewer_certificate {
@@ -159,8 +159,7 @@ resource "aws_cloudfront_distribution" "link" {
 }
 
 resource "aws_cloudfront_cache_policy" "link" {
-  name    = "soa-link"
-
+  name        = "soa-link"
   default_ttl = 200
   max_ttl     = 200
   min_ttl     = 1
@@ -193,7 +192,7 @@ resource "aws_cloudfront_cache_policy" "link" {
 }
 
 resource "aws_cloudfront_origin_request_policy" "link" {
-  name    = "soa-link"
+  name = "soa-link"
 
   cookies_config {
     cookie_behavior = "none"

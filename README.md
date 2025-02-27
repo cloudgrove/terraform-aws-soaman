@@ -193,36 +193,37 @@ resources:
 By not hardcoding the environment name, the `default` config is inherited by the other environments that are specified in the microservice config file.
 
 
-# Access reuirements
+# Access requirements
 
 1. To allow a user to access Docker containers running in ECS via SSH (i.e. `aws ecs execute-command ... --command sh --interactive`), they should be assigned the following IAM policy:
+
     ```
     {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "ecs:ExecuteCommand",
-                    "ecs:DescribeTasks"
-                ],
-                "Resource": "*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": "ssm:StartSession",
-                "Resource": "*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "ssmmessages:CreateControlChannel",
-                    "ssmmessages:CreateDataChannel",
-                    "ssmmessages:OpenControlChannel",
-                    "ssmmessages:OpenDataChannel"
-                ],
-                "Resource": "*"
-            }
-        ]
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ecs:ExecuteCommand",
+            "ecs:DescribeTasks"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": "ssm:StartSession",
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ssmmessages:CreateControlChannel",
+            "ssmmessages:CreateDataChannel",
+            "ssmmessages:OpenControlChannel",
+            "ssmmessages:OpenDataChannel"
+          ],
+          "Resource": "*"
+        }
+      ]
     }
     ```

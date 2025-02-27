@@ -79,7 +79,7 @@ resource "aws_route" "public" {
 resource "aws_route53_zone" "internal" {
   for_each = aws_vpc.all
 
-  name = "${each.key}"
+  name = each.key
 
   vpc {
     vpc_id = each.value.id

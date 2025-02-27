@@ -50,7 +50,7 @@ variable "ssh_key_name" {
 
 variable "target_security_groups" {
   description = "A map containing the security groups whose resources are to be accessed"
-  type        = map
+  type        = map(any)
   default     = {}
 }
 

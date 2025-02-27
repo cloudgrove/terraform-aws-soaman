@@ -24,7 +24,7 @@ variable "config_dir" {
 }
 
 variable "devops_ssh_key" {
-  description = "The SSH public key used for DevOps"
+  description = "The SSH public key used by DevOps to access EC2 instances"
   type        = string
   default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBSfpLd7V352Qx+lQGntER+N2My6jIgux1xzglsbk6PE devops@cloudgrove.io"
 }
@@ -47,20 +47,28 @@ variable "s3_prefix" {
   default     = "cloudgrove"
 }
 
-variable "subdomain_vpn_prefix" {
-  description = "The VPN subdomain prefix"
-  type        = string
-  default     = "vpn"
-}
-
 variable "vpn_admin_password" {
   description = "The password of the VPN admin account"
   type        = string
+  default     = "inject in TF_VAR_vpn_admin_password or add as a TFC var"
   sensitive   = true
 }
 
 variable "vpn_dev_password" {
   description = "The password of the VPN developer account"
+  default     = "inject in TF_VAR_vpn_dev_password or add as a TFC var"
   type        = string
   sensitive   = true
+}
+
+variable "vpn_subdomain_prefix" {
+  description = "The VPN subdomain prefix"
+  type        = string
+  default     = "vpn"
+}
+
+variable "vpn_vpc" {
+  description = "The target VPC to access via VPN"
+  type        = string
+  default     = "master"
 }

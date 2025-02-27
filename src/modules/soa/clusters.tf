@@ -75,7 +75,7 @@ resource "aws_route53_record" "alb" {
   for_each = local.cluster_configs
 
   zone_id = aws_route53_zone.internal[each.value.vpc].id
-  name    = "${each.key}"
+  name    = each.key
   type    = "CNAME"
   ttl     = "30"
   records = [aws_lb.alb[each.key].dns_name]
@@ -88,8 +88,8 @@ resource "aws_route53_record" "alb" {
 resource "aws_efs_file_system" "cluster" {
   for_each = local.cluster_configs
 
-  creation_token = each.key
-  encrypted      = true
+  creation_token   = each.key
+  encrypted        = true
   performance_mode = "generalPurpose"
   throughput_mode  = "bursting"
 
@@ -129,9 +129,10 @@ resource "aws_security_group_rule" "cluster_efs" {
 #
 
 resource "aws_iam_role" "ecs_task_execution" {
-  name               = "AmazonECSTaskExecution"
+  name = "AmazonECSTaskExecution"
+
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17",
+    Version = "2012-10-17",
     Statement = [
       {
         Effect    = "Allow",
@@ -151,8 +152,9 @@ resource "aws_iam_policy_attachment" "ecs_task_execution" {
 resource "aws_iam_policy" "ecs_task_extra" {
   name        = "AmazonECSTaskExtra"
   description = "Policy to create log groups"
-  policy      = jsonencode({
-    Version   = "2012-10-17",
+
+  policy = jsonencode({
+    Version = "2012-10-17",
     Statement = [
       {
         Sid      = "LogGroupCreation"
@@ -161,9 +163,9 @@ resource "aws_iam_policy" "ecs_task_extra" {
         Resource = "*"
       },
       {
-        Sid      = "ContainerChannel"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "ContainerChannel"
+        Effect = "Allow"
+        Action = [
           "ssmmessages:CreateControlChannel",
           "ssmmessages:CreateDataChannel",
           "ssmmessages:OpenControlChannel",

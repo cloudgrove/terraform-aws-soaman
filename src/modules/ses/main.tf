@@ -1,5 +1,6 @@
 resource "aws_ses_configuration_set" "main" {
   name = "main"
+
   reputation_metrics_enabled = true
 }
 
@@ -14,7 +15,7 @@ resource "aws_ses_domain_identity_verification" "main" {
 }
 
 resource "aws_ses_domain_mail_from" "main" {
-  domain = var.domain
+  domain           = var.domain
   mail_from_domain = "mail.${var.domain}"
 
   depends_on = [aws_ses_domain_identity.main]

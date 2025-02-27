@@ -16,8 +16,8 @@ locals {
       for instance, instance_config in merge(try(microservice_config.config.default.resources.rds, {}), try(microservice_config.config[var.env].resources.rds, {})) :
       "${microservice}-${instance}" => merge(try(microservice_config.config.default.resources.rds[instance], {}), instance_config, {
         microservice = microservice
-        cluster = microservice_config.cluster
-        vpc = microservice_config.vpc
+        cluster      = microservice_config.cluster
+        vpc          = microservice_config.vpc
       })
     }
   ])...)
@@ -83,9 +83,9 @@ resource "aws_ecs_task_definition" "all" {
       name = "primary"
 
       efs_volume_configuration {
-        file_system_id      = aws_efs_file_system.cluster[each.value.cluster].id
-        root_directory      = "/"
-        transit_encryption  = "ENABLED"
+        file_system_id     = aws_efs_file_system.cluster[each.value.cluster].id
+        root_directory     = "/"
+        transit_encryption = "ENABLED"
 
         authorization_config {
           access_point_id = aws_efs_access_point.microservice[each.key].id
@@ -100,10 +100,11 @@ resource "aws_ecs_task_definition" "all" {
       logConfiguration = {
         logDriver     = "awslogs"
         secretOptions = []
-        options       = {
-          awslogs-create-group = "true"
-          awslogs-group = each.key
-          awslogs-region = var.aws_region
+
+        options = {
+          awslogs-create-group  = "true"
+          awslogs-group         = each.key
+          awslogs-region        = var.aws_region
           awslogs-stream-prefix = "ecs"
         }
       }
@@ -131,8 +132,8 @@ resource "aws_ecs_task_definition" "all" {
 resource "aws_security_group" "microservice" {
   for_each = local.microservice_configs
 
-  name        = "soa-${each.value.vpc}.${each.value.cluster}.${each.key}"
-  vpc_id      = aws_vpc.all[each.value.vpc].id
+  name   = "soa-${each.value.vpc}.${each.value.cluster}.${each.key}"
+  vpc_id = aws_vpc.all[each.value.vpc].id
 }
 
 resource "aws_ecr_repository" "microservice" {
@@ -224,20 +225,20 @@ resource "aws_efs_access_point" "microservice" {
 
 locals {
   database_ports = {
-    aurora = 3306
-    aurora-mysql = 3306
+    aurora            = 3306
+    aurora-mysql      = 3306
     aurora-postgresql = 5432
-    mysql = 3306
-    mariadb = 3306
-    postgres = 5432
-    oracle-se = 1521
-    oracle-se1 = 1521
-    oracle-se2 = 1521
-    oracle-ee = 1521
-    sqlserver-ee = 1433
-    sqlserver-se = 1433
-    sqlserver-ex = 1433
-    sqlserver-web = 1433
+    mysql             = 3306
+    mariadb           = 3306
+    postgres          = 5432
+    oracle-se         = 1521
+    oracle-se1        = 1521
+    oracle-se2        = 1521
+    oracle-ee         = 1521
+    sqlserver-ee      = 1433
+    sqlserver-se      = 1433
+    sqlserver-ex      = 1433
+    sqlserver-web     = 1433
   }
 }
 
@@ -366,7 +367,7 @@ data "aws_iam_policy_document" "microservice" {
       sid    = "S3ReadOnly"
       effect = "Allow"
       actions = [
-				"s3:ListBucket",
+        "s3:ListBucket",
         "s3:GetObject",
       ]
       resources = flatten([
@@ -388,7 +389,7 @@ data "aws_iam_policy_document" "microservice" {
       sid    = "S3ReadWrite"
       effect = "Allow"
       actions = [
-				"s3:ListBucket",
+        "s3:ListBucket",
         "s3:GetObject",
         "s3:PutObject",
         "s3:DeleteObject",

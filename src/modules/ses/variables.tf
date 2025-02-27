@@ -1,6 +1,6 @@
 variable "addresses" {
   description = "The list of email addresses that should be enabled in SES"
-  type        = list
+  type        = list(string)
   default     = []
 }
 

@@ -26,7 +26,7 @@ resource "aws_s3_bucket_ownership_controls" "all" {
 resource "aws_s3_bucket_public_access_block" "all" {
   for_each = local.bucket_configs
 
-  bucket = aws_s3_bucket.all[each.value.name].id
+  bucket                  = aws_s3_bucket.all[each.value.name].id
   block_public_acls       = try(each.value.access.block_public_acls, try(regex("public", each.value.access.acl) != "public", true))
   block_public_policy     = try(each.value.access.block_public_policy, try(regex("public", each.value.access.acl) != "public", true))
   ignore_public_acls      = try(each.value.access.ignore_public_acls, try(regex("public", each.value.access.acl) != "public", true))
@@ -93,7 +93,7 @@ resource "aws_s3_bucket_policy" "custom" {
   bucket = aws_s3_bucket.all[each.value.name].id
 
   policy = jsonencode({
-    Version   = "2008-10-17"
+    Version = "2008-10-17"
     Statement = [
       for statement in each.value.statements : {
         Sid       = statement.sid

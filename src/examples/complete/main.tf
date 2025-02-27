@@ -62,10 +62,10 @@ module "soa" {
 
 module "vpn" {
   source                 = "../../modules/openvpn"
-  vpc_id                 = module.soa.vpcs["master"].id
+  vpc_id                 = module.soa.vpcs[var.vpn_vpc].id
   public_subnet_id       = element(values(module.soa.public_subnets).*.id, 1)
   zone_id                = module.dns.zone_id
-  domain                 = "${var.subdomain_vpn_prefix}.${local.subdomain}"
+  domain                 = "${var.vpn_subdomain_prefix}.${local.subdomain}"
   email                  = local.devops_email
   admin_password         = var.vpn_admin_password
   dev_password           = var.vpn_dev_password
