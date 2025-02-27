@@ -81,37 +81,6 @@ resource "aws_route53_record" "alb" {
   records = [aws_lb.alb[each.key].dns_name]
 }
 
-resource "aws_lb" "nlb" {
-  for_each = local.cluster_configs
-
-  name               = "${each.value.vpc}-${each.key}-nlb"
-  internal           = false
-  load_balancer_type = "network"
-  subnets            = [for subnet in aws_subnet.public : subnet.id if subnet.vpc_id == aws_vpc.all[each.value.vpc].id]
-  security_groups    = [aws_security_group.nlb[each.key].id]
-}
-
-resource "aws_security_group" "nlb" {
-  for_each = local.cluster_configs
-
-  name   = "soa-${each.value.vpc}.${each.key}.nlb"
-  vpc_id = aws_vpc.all[each.value.vpc].id
-
-  ingress {
-    protocol    = "tcp"
-    from_port   = 443
-    to_port     = 443
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
 #
 # EFS
 #

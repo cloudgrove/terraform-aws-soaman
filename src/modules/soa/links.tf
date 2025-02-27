@@ -1,5 +1,5 @@
 resource "aws_lb_listener_rule" "admin_path_block" {
-  for_each = local.cluster_configs
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
 
   listener_arn = aws_lb_listener.entrypoint[each.key].arn
   priority     = 1
@@ -25,7 +25,7 @@ resource "aws_lb_listener_rule" "admin_path_block" {
 }
 
 resource "aws_lb_listener" "entrypoint" {
-  for_each = local.cluster_configs
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
 
   load_balancer_arn = aws_lb.alb[each.key].arn
   port              = 443
@@ -40,7 +40,7 @@ resource "aws_lb_listener" "entrypoint" {
 }
 
 resource "aws_lb_target_group_attachment" "link" {
-  for_each = local.cluster_configs
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
 
   target_id        = aws_lb.alb[each.key].id
   target_group_arn = aws_lb_target_group.link[each.key].arn
@@ -49,7 +49,7 @@ resource "aws_lb_target_group_attachment" "link" {
 }
 
 resource "aws_lb_target_group" "link" {
-  for_each = local.cluster_configs
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
 
   name        = aws_lb.alb[each.key].name
   vpc_id      = aws_vpc.all[each.value.vpc].id
@@ -67,9 +67,9 @@ resource "aws_lb_target_group" "link" {
 }
 
 resource "aws_lb_listener" "link" {
-  for_each = local.cluster_configs
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
 
-  load_balancer_arn = aws_lb.nlb[each.key].arn
+  load_balancer_arn = aws_lb.link[each.key].arn
   protocol          = "TCP"
   port              = 443
 
@@ -79,11 +79,42 @@ resource "aws_lb_listener" "link" {
   }
 }
 
+resource "aws_lb" "link" {
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
+
+  name               = "${each.value.vpc}-${each.key}-nlb"
+  internal           = false
+  load_balancer_type = "network"
+  subnets            = [for subnet in aws_subnet.public : subnet.id if subnet.vpc_id == aws_vpc.all[each.value.vpc].id]
+  security_groups    = [aws_security_group.link[each.key].id]
+}
+
+resource "aws_security_group" "link" {
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
+
+  name   = "soa-${each.value.vpc}.${each.key}.nlb"
+  vpc_id = aws_vpc.all[each.value.vpc].id
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 443
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_cloudfront_distribution" "link" {
-  for_each = local.cluster_configs
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
 
   origin {
-    domain_name = aws_lb.nlb[each.key].dns_name
+    domain_name = aws_lb.link[each.key].dns_name
     origin_id   = local.cluster_domains[each.key]
 
     custom_origin_config {
@@ -178,7 +209,7 @@ resource "aws_cloudfront_origin_request_policy" "link" {
 }
 
 resource "aws_route53_record" "link" {
-  for_each = local.cluster_configs
+  for_each = { for k, v in local.cluster_configs : k => v if try(v.entrypoint, null) != null }
 
   name    = local.cluster_domains[each.key]
   zone_id = var.zone_id
