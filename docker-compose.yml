@@ -1,0 +1,8 @@
+version: "3.4"
+services:
+  main:
+    image: ${DOCKER_IMAGE}
+    ports:
+      - 8080:8080
+    volumes:
+      - ./src:${DOCKER_PROJECT_DIR}
