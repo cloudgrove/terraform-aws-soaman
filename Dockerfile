@@ -1,4 +1,4 @@
-FROM hashicorp/terraform:1.3.7 AS base
+FROM hashicorp/terraform:1.11.2 AS base
 ARG DOCKER_PROJECT_DIR
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
@@ -11,4 +11,4 @@ RUN apk add --update bash git findutils make openrc tree
 WORKDIR $PROJECT_DIR
 COPY . ./
 RUN make test package
-CMD tail -f /dev/null
+ENTRYPOINT tail -f /dev/null
