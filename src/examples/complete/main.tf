@@ -69,6 +69,8 @@ module "vpn" {
   email                  = local.devops_email
   admin_password         = var.vpn_admin_password
   dev_password           = var.vpn_dev_password
+  instance_ami           = var.vpn_instance_ami
+  instance_type          = var.vpn_instance_type
   ssh_key_name           = aws_key_pair.devops.key_name
   target_security_groups = module.soa.security_groups
 }

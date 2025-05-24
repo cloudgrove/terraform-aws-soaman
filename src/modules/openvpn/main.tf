@@ -18,8 +18,8 @@ resource "aws_eip_association" "openvpn" {
 }
 
 resource "aws_instance" "openvpn" {
-  ami           = "ami-080e1f13689e07408"
-  instance_type = "t2.micro"
+  ami           = var.instance_ami
+  instance_type = var.instance_type
   subnet_id     = var.public_subnet_id
   key_name      = var.ssh_key_name
 

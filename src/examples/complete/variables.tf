@@ -61,6 +61,18 @@ variable "vpn_dev_password" {
   sensitive   = true
 }
 
+variable "vpn_instance_ami" {
+  description = "The ID of the EC2 AMI to be used for the VPN server"
+  type        = string
+  default     = "ami-080e1f13689e07408"
+}
+
+variable "vpn_instance_type" {
+  description = "The type of EC2 instance to be used for the VPN server"
+  type        = string
+  default     = "t3.micro"
+}
+
 variable "vpn_subdomain_prefix" {
   description = "The VPN subdomain prefix"
   type        = string

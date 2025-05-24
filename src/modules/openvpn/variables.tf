@@ -32,6 +32,18 @@ variable "email" {
   type        = string
 }
 
+variable "instance_ami" {
+  description = "The ID of the EC2 AMI to be used for the VPN server"
+  type        = string
+  default     = "ami-080e1f13689e07408"
+}
+
+variable "instance_type" {
+  description = "The type of EC2 instance to be used for the VPN server"
+  type        = string
+  default     = "t3.micro"
+}
+
 variable "private_subnet_cidr" {
   description = "The CIDR block representing the private subnet to which VPN clients should have access"
   type        = string
