@@ -1,4 +1,4 @@
-FROM hashicorp/terraform:1.11.2 AS base
+FROM hashicorp/terraform:1.12.1 AS base
 ARG DOCKER_PROJECT_DIR
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY

@@ -31,7 +31,7 @@ resource "aws_lb_listener" "entrypoint" {
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = var.certificate_arn
+  certificate_arn   = var.lb_certificate_arn
 
   default_action {
     type             = "forward"
@@ -146,7 +146,7 @@ resource "aws_cloudfront_distribution" "link" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = var.certificate_arn
+    acm_certificate_arn      = var.cf_certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }

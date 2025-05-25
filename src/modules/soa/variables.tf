@@ -3,8 +3,13 @@ variable "aws_region" {
   type        = string
 }
 
-variable "certificate_arn" {
-  description = "The AWS ARN of the target SSL/TLS certificate from ACM"
+variable "lb_certificate_arn" {
+  description = "The AWS ARN of the target ACM certificate for load balancers"
+  type        = string
+}
+
+variable "cf_certificate_arn" {
+  description = "The AWS ARN of the target ACM certificate for CloudFront distributions"
   type        = string
 }
 

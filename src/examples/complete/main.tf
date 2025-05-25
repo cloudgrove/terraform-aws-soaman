@@ -51,13 +51,14 @@ module "ses" {
 }
 
 module "soa" {
-  source          = "../../modules/soa"
-  config_dir      = "${path.module}/config"
-  aws_region      = var.aws_region
-  zone_id         = module.dns.zone_id
-  domain          = local.subdomain
-  env             = var.env
-  certificate_arn = module.dns.certificate_arn
+  source             = "../../modules/soa"
+  config_dir         = "${path.module}/config"
+  aws_region         = var.aws_region
+  zone_id            = module.dns.zone_id
+  domain             = local.subdomain
+  env                = var.env
+  lb_certificate_arn = module.dns.certificate_arn
+  cf_certificate_arn = module.dns.cloudfront_certificate_arn
 }
 
 module "vpn" {

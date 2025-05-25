@@ -1,5 +1,12 @@
-resource "aws_route53_zone" "main" {
-  name = var.domain
+provider "aws" {
+  alias  = "global"
+  region = "us-east-1"
+}
+
+resource "aws_acm_certificate" "cloudfront" {
+  domain_name       = "*.${var.domain}"
+  validation_method = "DNS"
+  provider          = aws.global
 }
 
 resource "aws_acm_certificate" "main" {
@@ -12,12 +19,16 @@ resource "aws_acm_certificate_validation" "main" {
   validation_record_fqdns = [for record in aws_route53_record.main : record.fqdn]
 }
 
+resource "aws_route53_zone" "main" {
+  name = var.domain
+}
+
 resource "aws_route53_record" "main" {
   for_each = {
-    for dvo in aws_acm_certificate.main.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
+    for option in aws_acm_certificate.main.domain_validation_options : option.domain_name => {
+      name   = option.resource_record_name
+      record = option.resource_record_value
+      type   = option.resource_record_type
     }
   }
 
