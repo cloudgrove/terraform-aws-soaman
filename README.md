@@ -89,11 +89,21 @@ Running Terraform here means `terraform apply`.
 
 ## Before the run
 
-1. Create the `terraform` IAM user in AWS, assign it the `AdministratorAccess` AWS managed policy, generate an access key pair for it, and load these keys into the relevant environment variables. If you are running Terraform locally, these environment variables are:
+1. Create the `terraform` IAM user in AWS, assign it the `AdministratorAccess` AWS managed policy, generate an access key pair for it, and load these AWS keys into the relevant environment variables. If you are running Terraform locally, these environment variables are:
     * `TF_VAR_aws_access_key`
     * `TF_VAR_aws_secret_key`
 
-1. If you plan on leveraging KMS to protect your sensitive values, create a new multi-region KMS key in each environment account with the name `default` and grant the `terraform` IAM user access to it.
+1. If you plan on leveraging KMS to protect your sensitive values, ensure there is a KMS key in each environment account (with the alias name `default` for example) and grant the `terraform` IAM user access to it. For redundancy and disaster prevention, you can manually create a multi-region KMS key in one of the regions (`us-east-1` for instance) and use the `mrk` module to replicate this key in your target region(s). Here is an example invocation (which you can insert in the root `main.tf`, along with the other module invocations) that replicates the `default` key:
+```
+module "mrk" {
+  source      = "cloudgrove/soaman/aws//src/modules/mrk"
+  alias       = "alias/default"
+  origin      = "us-east-1"
+  destination = var.aws_region
+}
+```
+
+1. Replace the existing KMS-encrypted value for the [Postgres password](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/microservices/gateway-service.yml#L24) with your own, if its associated config block is kept.
 
 
 ## During the run
