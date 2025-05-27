@@ -89,9 +89,9 @@ Running Terraform here means `terraform apply`.
 
 ## Before the run
 
-1. Create the `terraform` IAM user in AWS, assign it the `AdministratorAccess` AWS managed policy, generate an access key pair for it, and load these AWS keys into the relevant environment variables. If you are running Terraform locally, these environment variables are:
-    * `TF_VAR_aws_access_key`
-    * `TF_VAR_aws_secret_key`
+1. Create the `terraform` IAM user in AWS, assign it the `AdministratorAccess` AWS managed policy, generate an access key pair for it, and load these AWS keys into the relevant environment variables, i.e.:
+    * `AWS_ACCESS_KEY_ID`
+    * `AWS_SECRET_ACCESS_KEY`
 
 1. If you plan on leveraging KMS to protect your sensitive values, ensure there is a KMS key in each environment account (with the alias name `default` for example) and grant the `terraform` IAM user access to it. For redundancy and disaster prevention, you can manually create a multi-region KMS key in one of the regions (`us-east-1` for instance) and use the `mrk` module to replicate this key in your target region(s). Here is an example invocation (which you can insert in the root `main.tf`, along with the other module invocations) that replicates the `default` key:
 ```
