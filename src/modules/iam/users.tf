@@ -41,12 +41,15 @@ resource "aws_iam_user_policy" "custom_policies" {
   name   = each.key
   user   = each.key
   policy = each.value.json
-}
 
+  depends_on = [aws_iam_user.all]
+}
 
 resource "aws_iam_user_policy_attachment" "policies" {
   for_each = local.user_policies
 
   user       = each.value.user
   policy_arn = each.value.policy
+
+  depends_on = [aws_iam_user.all, aws_iam_user_policy.custom_policies]
 }
