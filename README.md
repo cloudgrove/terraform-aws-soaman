@@ -105,6 +105,39 @@ module "mrk" {
 
 1. Replace the existing KMS-encrypted value for the [Postgres password](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/microservices/gateway-service.yml#L24) with your own, if its associated config block is kept.
 
+1. If your target AWS region is not `us-east-1`, you will need to adjust the instance AMI for the OpenVPN server (preferably through the `vpn_instance_ami` variable). Below are the recommended (community, AMD-based) AMIs to use. If your target region is not listed here, search the community AMIs with the term `ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20240301`.
+
+| Region           | AMI                     |
+| ---------------- | ----------------------- |
+| `af-south-1`     | `ami-08602ac2d592c8c31` |
+| `ap-northeast-1` | `ami-0eba6c58b7918d3a1` |
+| `ap-northeast-2` | `ami-09a7535106fbd42d5` |
+| `ap-northeast-3` | `ami-021a9d8a7dda97aa5` |
+| `ap-south-1`     | `ami-007020fd9c84e18c7` |
+| `ap-southeast-1` | `ami-06c4be2792f419b7b` |
+| `ap-southeast-2` | `ami-09c8d5d747253fb7a` |
+| `ap-southeast-3` | `ami-02c28895d7962c033` |
+| `ap-southeast-4` | `ami-08b65f49f52d12d21` |
+| `ap-southeast-5` | `ami-06ed80a8a40a24b5a` |
+| `ap-southeast-7` | `ami-087d4ea33f58e295a` |
+| `ca-central-1`   | `ami-05d4121edd74a9f06` |
+| `ca-west-1`      | `ami-007c2d3b0e49411ae` |
+| `eu-central-1`   | `ami-023adaba598e661ac` |
+| `eu-central-2`   | `ami-0012c4a50d44fc78a` |
+| `eu-north-1`     | `ami-0914547665e6a707c` |
+| `eu-south-2`     | `ami-0ee19dcf57f09e938` |
+| `eu-west-1`      | `ami-0c1c30571d2dae5c9` |
+| `eu-west-2`      | `ami-0b9932f4918a00c4f` |
+| `eu-west-3`      | `ami-00c71bd4d220aa22a` |
+| `me-central-1`   | `ami-04c9a1a3a1cdc1655` |
+| `me-south-1`     | `ami-0cb98ff932dc19acf` |
+| `mx-central-1`   | `ami-0a4b368a47af0952d` |
+| `sa-east-1`      | `ami-08af887b5731562d3` |
+| `us-east-1`      | `ami-080e1f13689e07408` |
+| `us-east-2`      | `ami-0b8b44ec9a8f90422` |
+| `us-west-1`      | `ami-05c969369880fa2c2` |
+| `us-west-2`      | `ami-08116b9957a259459` |
+
 
 ## During the run
 
@@ -161,6 +194,8 @@ Note: these two records are blockers to the creation of the VPN box and CloudFro
 # VPN setup
 
 By default, the OpenVPN setup comes with one admin user (`openvpn`) and one regular user (`dev`). Their associated usernames can be customized using the `admin_username` and `dev_username` attributes. Furthermore, the `admin_password` and `dev_password` attributes need to be set, preferably through external environment variables, so that login to the OpenVPN portal works; and from there, other user records can be managed. The portal can be accessed at the environment-specific target subdomain (e.g. `https://vpn.alpha.cloudgrove.io` if the `alpha` environment is targeted) after both the provisioning of the EC2 instance and the complete installation of OpenVPN are done. Trying to access the OpenVPN portal prematurely can break the VPN server. If that happens however, simply terminate the VPN EC2 instance and rerun `terraform apply` to reprovision the VPN setup.
+
+Note: invoking the OpenVPN installation sevral times might end up in a failure due to the request limit imposed by `letsencrypt`. If this happens, wait for a few hours and try again.
 
 
 # YAML configs
