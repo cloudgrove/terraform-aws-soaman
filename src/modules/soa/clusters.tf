@@ -151,7 +151,7 @@ resource "aws_iam_policy_attachment" "ecs_task_execution" {
 
 resource "aws_iam_policy" "ecs_task_extra" {
   name        = "AmazonECSTaskExtra"
-  description = "Policy to create log groups"
+  description = "Policy to manage additional ECS task permissions"
 
   policy = jsonencode({
     Version = "2012-10-17",
@@ -169,21 +169,30 @@ resource "aws_iam_policy" "ecs_task_extra" {
           "ssmmessages:CreateControlChannel",
           "ssmmessages:CreateDataChannel",
           "ssmmessages:OpenControlChannel",
-          "ssmmessages:OpenDataChannel"
+          "ssmmessages:OpenDataChannel",
         ]
         Resource = "*"
       },
       {
-        Sid    = "EfsMount",
-        Effect = "Allow",
+        Sid    = "EfsMount"
+        Effect = "Allow"
         Action = [
           "elasticfilesystem:ClientMount",
           "elasticfilesystem:ClientWrite",
-          "elasticfilesystem:DescribeFileSystems",
           "elasticfilesystem:DescribeAccessPoints",
+          "elasticfilesystem:DescribeFileSystems",
           "elasticfilesystem:DescribeMountTargets",
-        ],
-        Resource = "*",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "KmsEncryptDecrypt"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:Encrypt",
+        ]
+        "Resource" = "*"
       }
     ]
   })
