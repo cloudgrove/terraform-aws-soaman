@@ -4,23 +4,20 @@ provider "aws" {
 }
 
 resource "aws_acm_certificate" "cloudfront" {
-  domain_name       = "*.${var.domain}"
-  validation_method = "DNS"
-  provider          = aws.global
+  domain_name               = "*.${var.env}.${var.domain}"
+  subject_alternative_names = ["*.${var.domain}"]
+  validation_method         = "DNS"
+  provider                  = aws.global
 }
 
 resource "aws_acm_certificate" "main" {
-  domain_name       = "*.${var.domain}"
-  validation_method = "DNS"
-}
-
-resource "aws_acm_certificate_validation" "main" {
-  certificate_arn         = aws_acm_certificate.main.arn
-  validation_record_fqdns = [for record in aws_route53_record.main : record.fqdn]
+  domain_name               = "*.${var.env}.${var.domain}"
+  subject_alternative_names = ["*.${var.domain}"]
+  validation_method         = "DNS"
 }
 
 resource "aws_route53_zone" "main" {
-  name = var.domain
+  name = "${var.env}.${var.domain}"
 }
 
 resource "aws_route53_record" "main" {
@@ -29,7 +26,7 @@ resource "aws_route53_record" "main" {
       name   = option.resource_record_name
       record = option.resource_record_value
       type   = option.resource_record_type
-    }
+    } if can(regex("^([^.]+|\\*)\\.${var.env}\\.${var.domain}$", option.domain_name))
   }
 
   allow_overwrite = true
@@ -38,4 +35,10 @@ resource "aws_route53_record" "main" {
   ttl             = 60
   type            = each.value.type
   zone_id         = aws_route53_zone.main.zone_id
+}
+
+resource "time_sleep" "main" {
+  create_duration = "60s"
+
+  depends_on = [aws_acm_certificate.main]
 }

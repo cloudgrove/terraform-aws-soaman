@@ -11,7 +11,7 @@ resource "aws_route53_record" "app" {
   for_each = local.app_configs
 
   zone_id = var.zone_id
-  name    = try("${each.value.subdomain}.${var.domain}", var.domain)
+  name    = "${each.value.subdomain}.${var.env}.${var.domain}"
   type    = "A"
 
   alias {
@@ -26,8 +26,8 @@ resource "aws_cloudfront_distribution" "app" {
 
   enabled             = try(each.value.enabled, true)
   default_root_object = "index.html"
-  comment             = try("${each.value.subdomain}.${var.domain}", var.domain)
-  aliases             = [try("${each.value.subdomain}.${var.domain}", "*.${var.domain}")]
+  comment             = "${each.value.subdomain}.${var.env}.${var.domain}"
+  aliases             = ["${each.value.subdomain}.${var.env}.${var.domain}", "${each.value.subdomain}.${var.domain}"]
 
   origin {
     domain_name = var.s3_bucket_domain

@@ -28,6 +28,8 @@ The design of `aws-soaman` enjoys the benefits of multiple features:
 
 1. Auto-generated DNS routes (for load balancers, RDS instances, CloudFront Distributions, VPN instances) to standardize and ease access to resources.
 
+1. Preconfigured DNS-dependent resources (i.e. ACM certificates, CloudFront distributions, and load balancers) to leverage both subdomain and parent domain names.
+
 1. Shared file systems using EFS, to enable scaling up microservices that depend on a file system, such as Jenkins.
 
 1. VPN access using OpenVPN, to enable access to resources on the private network.
@@ -143,23 +145,25 @@ module "mrk" {
 
 In the domain name registrar of choice (e.g. GoDaddy):
 
-1. Add a new `CNAME` record in order to validate the Terraform-generated ACM certificate. The relevant values can be found in the ACM section of the AWS console under the target certificate, with the column names `CNAME name` and `CNAME value`, or can be retrieved using the following command (after replacing `<DOMAIN>` and `<ENV>`):
-```
-aws acm describe-certificate \
-  --certificate-arn $(aws acm list-certificates --query "CertificateSummaryList[?DomainName=='*.<ENV>.<DOMAIN>'].CertificateArn" --output text) \
-  --query "Certificate.DomainValidationOptions[?ValidationStatus=='PENDING_VALIDATION'].{CNAME_Name: ResourceRecord.Name, CNAME_Value: ResourceRecord.Value}" \
-  --output text
-```
+1. add a new `NS` record for the Terraform-generated subdomain Route53 record (e.g. `alpha.cloudgrove.io`), which creates a separate, independent sub-zone within the DNS hierarchy, allowing you to manage the subdomain's records separately from the parent domain's records, including the `CNAME` record provided by ACM to validate the generated SSL certificates. The target `NS` record would have a value similar to `ns-203.awsdns-25.com`, a value that can be found in the AWS console under the Route53 public hosted zone that Terraform generates, or can be retrieved using the following command (after replacing `<DOMAIN>`):
+    ```
+    aws route53 list-resource-record-sets \
+      --hosted-zone-id $(aws route53 list-hosted-zones-by-name --dns-name <DOMAIN> --query "HostedZones[0].Id" --output text) \
+      --query "ResourceRecordSets[?Type=='NS'].ResourceRecords[*].Value" \
+      --output text
+    ```
 
-1. Add a new `NS` record to link the Terraform-generated subdomain Route53 record (e.g. `alpha.cloudgrove.io`) to your target domain (e.g. `cloudgrove.io`). The `NS` record would have a value similar to `ns-203.awsdns-25.com`, a value that can be found in the AWS console under the Route53 public hosted zone that Terraform generates, or can be retrieved using the following command (after replacing `<DOMAIN>`):
-```
-aws route53 list-resource-record-sets \
-  --hosted-zone-id $(aws route53 list-hosted-zones-by-name --dns-name <DOMAIN> --query "HostedZones[0].Id" --output text) \
-  --query "ResourceRecordSets[?Type=='NS'].ResourceRecords[*].Value" \
-  --output text
-```
+2. add a new `CNAME` record in order to validate the base domain part of the Terraform-generated ACM certificate. The relevant values can be found in the ACM section of the AWS console under the target certificate, with the column names `CNAME name` and `CNAME value`, or can be retrieved using the following command (after replacing `<DOMAIN>` and `<ENV>`):
+    ```
+    aws acm describe-certificate \
+      --certificate-arn $(aws acm list-certificates --query "CertificateSummaryList[?DomainName=='*.<ENV>.<DOMAIN>'].CertificateArn" --output text) \
+      --query "Certificate.DomainValidationOptions[?ValidationStatus=='PENDING_VALIDATION'].{CNAME_Name: ResourceRecord.Name, CNAME_Value: ResourceRecord.Value}" \
+      --output text
+    ```
 
-Note: these two records are blockers to the creation of the VPN box and CloudFront distributions.
+Note:
+- These types of records are blockers to the creation of the `soa` load balancer, VPN box, and CloudFront distributions.
+- After Terrform creates the ACM certificates, you will have one minute to insert the necessary NS record and validate the certificate. If the Terraform run ends up failing due to needing more time for validation, take your time validating the certificate, then reexecute the Terraform run.
 
 
 ## After the run
@@ -428,6 +432,11 @@ enabled: ... # Desired status of the CloudFront distribution; defaults to `true`
 See an example [here](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/apps/main.yml), which provisions a web app hosted at https://app.alpha.cloudgrove.io.
 
 Note that all apps within the same app set reside in the same bucket, which is specified in the `module` invocation. If a new app is to be hosted in a different S3 bucket, then a new `module` block (invoking `appset`) is required.
+
+
+# DNS config
+
+In case one wants to hide the environment name from the generated URLs (i.e. `api.alpha.cloudgrove.io`, `app.alpha.cloudgrove.io`, etc), it is possible (thanks to preconfigured ACM certificates, load balancers, and CloudFront distribbutions) to add a `CNAME` record in the registrar DNS config where the `NS` records are managed to point the desired environment-free subdomain (e.g. `api.cloudgrove.io`, `app.cloudgrove.io`, etc) to the target environment-specific subdomain (e.g. `app.alpha.cloudgrove.io`).
 
 
 # Bonus

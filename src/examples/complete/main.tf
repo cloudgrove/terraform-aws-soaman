@@ -20,14 +20,16 @@ module "appset" {
   source           = "../../modules/appset"
   config_dir       = "${path.module}/config/apps"
   zone_id          = module.dns.zone_id
-  domain           = local.subdomain
+  domain           = var.domain_name
+  env              = var.env
   s3_bucket_domain = module.s3.buckets["public-assets"].bucket_regional_domain_name
-  certificate_arn  = module.dns.certificate_arn
+  certificate_arn  = module.dns.cloudfront_certificate_arn
 }
 
 module "dns" {
   source = "../../modules/dns"
-  domain = local.subdomain
+  domain = var.domain_name
+  env    = var.env
 }
 
 module "iam" {
@@ -55,7 +57,7 @@ module "soa" {
   config_dir         = "${path.module}/config"
   aws_region         = var.aws_region
   zone_id            = module.dns.zone_id
-  domain             = local.subdomain
+  domain             = var.domain_name
   env                = var.env
   lb_certificate_arn = module.dns.certificate_arn
   cf_certificate_arn = module.dns.cloudfront_certificate_arn

@@ -7,7 +7,7 @@ locals {
   }
   cluster_domains = {
     for cluster, cluster_config in local.cluster_configs :
-    cluster => "${try(cluster_config.subdomain, cluster_config.name)}.${var.domain}"
+    cluster => "${try(cluster_config.subdomain, cluster_config.name)}.${var.env}.${var.domain}"
   }
   cluster_subnets = merge(flatten([
     for cluster, cluster_config in local.cluster_configs : {

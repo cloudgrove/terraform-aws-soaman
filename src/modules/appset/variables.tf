@@ -13,6 +13,11 @@ variable "domain" {
   type        = string
 }
 
+variable "env" {
+  description = "The target environment"
+  type        = string
+}
+
 variable "s3_bucket_domain" {
   description = "The domain name of the S3 bucket hosting the target apps"
   type        = string
