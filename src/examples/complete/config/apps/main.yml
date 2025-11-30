@@ -1,3 +1,4 @@
 name: main
 subdomain: app
 path: /apps/main/current
+masked_env: prod

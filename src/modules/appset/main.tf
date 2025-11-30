@@ -27,7 +27,7 @@ resource "aws_cloudfront_distribution" "app" {
   enabled             = try(each.value.enabled, true)
   default_root_object = "index.html"
   comment             = "${each.value.subdomain}.${var.env}.${var.domain}"
-  aliases             = ["${each.value.subdomain}.${var.env}.${var.domain}", "${each.value.subdomain}.${var.domain}"]
+  aliases             = compact(["${each.value.subdomain}.${var.env}.${var.domain}", try(each.value.masked_env, null) == var.env ? "${each.value.subdomain}.${var.domain}" : null])
 
   origin {
     domain_name = var.s3_bucket_domain

@@ -131,8 +131,7 @@ resource "aws_cloudfront_distribution" "link" {
   default_root_object = ""
   price_class         = "PriceClass_All"
   comment             = local.cluster_domains[each.key]
-
-  aliases = [local.cluster_domains[each.key], replace(local.cluster_domains[each.key], ".${var.env}", "")]
+  aliases             = compact([local.cluster_domains[each.key], try(each.value.masked_env, null) == var.env ? replace(local.cluster_domains[each.key], ".${var.env}", "") : null])
 
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]

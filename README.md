@@ -259,12 +259,15 @@ name: ... # String identifying the cluster
 vpc: ... # Name of the target VPC
 subdomain: ... # Prefix of the subdomain for accessing the entrypoint service in the cluster
 entrypoint: ... # Name of the entrypoint service
+masked_env: ... # Name of the environment to be masked/hidden from the subdomain URL
 container_insights: ... # For AWS insight metrics; defaults to `disabled`
 ```
 
-See an example [here](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/clusters/main.yml), which provisions an ECS cluster called `main`, on the `master` VPC, with container insights. The entrypoint service for this cluster is `gateway-service`, and can be accessed from the public internet at `https://api.alpha.cloudgrove.io`. If one is connected to a VPN on the `master` VPC, microservices running on this ECS cluster can be accessed via the route `http://main.master:<port>`; for example, `http://main.master:80` accesses `gateway-service` (which runs on port `80`).
+See an example [here](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/clusters/main.yml), which provisions an ECS cluster called `main`, on the `master` VPC, with container insights. The entrypoint service for this cluster is `gateway-service`, and can be accessed from the public internet at `https://api.alpha.cloudgrove.io`, and at `https://api.cloudgrove.io` if `masked_env` has a value of `alpha` in this case. If one is connected to a VPN on the `master` VPC, microservices running on this ECS cluster can be accessed via the route `http://main.master:<port>`; for example, `http://main.master:80` accesses `gateway-service` (which runs on port `80`).
 
-Note that if the `entrypoint` is not specified, the link between the public internet and the cluster is omitted, and the cluster resources become 100% private (which may be ideal for tasks that handle in-house data). Such a link comprises the private ALB, the public NLB, the desired subdomain-related CloudFront distribution, and the DNS record for such a subdomain.
+Note:
+- If the `entrypoint` is not specified, the link between the public internet and the cluster is omitted, and the cluster resources become 100% private (which may be ideal for tasks that handle in-house data). Such a link comprises the private ALB, the public NLB, the desired subdomain-specific CloudFront distribution, and the DNS record for such a subdomain.
+- There can be only one CloudFront distribution that is associated with the parent (env-free) subdomain (e.g. `api.cloudgrove.io`) across all environments; otherwise, AWS returns an error during the provisioning of the CloudFront distribution.
 
 
 ## Microservice config
@@ -426,12 +429,15 @@ The full list of configuration parameters for a hosted web app is as follows:
 name: ... # String identifying the app; example: `landing-site`
 subdomain: ... # defaults to the empty string
 path: ... # S3 location, excluding the bucket name; example: `/apps/landing-site/current`
+masked_env: ... # Name of the environment to be masked/hidden from the subdomain URL
 enabled: ... # Desired status of the CloudFront distribution; defaults to `true`
 ```
 
-See an example [here](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/apps/main.yml), which provisions a web app hosted at https://app.alpha.cloudgrove.io.
+See an example [here](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/apps/main.yml), which provisions a web app hosted at `https://app.alpha.cloudgrove.io`, and at `https://app.cloudgrove.io` if `masked_env` has a value of `alpha` in this case.
 
-Note that all apps within the same app set reside in the same bucket, which is specified in the `module` invocation. If a new app is to be hosted in a different S3 bucket, then a new `module` block (invoking `appset`) is required.
+Note:
+- All apps within the same app set reside in the same bucket, which is specified in the `module` invocation. If a new app is to be hosted in a different S3 bucket, then a new `module` block (invoking `appset`) is required.
+- There can be only one CloudFront distribution that is associated with the parent (env-free) subdomain (e.g. `app.cloudgrove.io`) across all environments; otherwise, AWS returns an error during the provisioning of the CloudFront distribution.
 
 
 # DNS config
