@@ -50,13 +50,14 @@ resource "aws_cloudfront_distribution" "app" {
   }
 
   default_cache_behavior {
-    target_origin_id       = var.s3_bucket_domain
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
+    target_origin_id           = var.s3_bucket_domain
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD"]
+    viewer_protocol_policy     = "redirect-to-https"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.cross_origin_isolation.id
+    min_ttl                    = 0
+    default_ttl                = 3600
+    max_ttl                    = 86400
 
     forwarded_values {
       query_string = true
@@ -75,6 +76,31 @@ resource "aws_cloudfront_distribution" "app" {
   restrictions {
     geo_restriction {
       restriction_type = "none"
+    }
+  }
+}
+
+resource "aws_cloudfront_response_headers_policy" "cross_origin_isolation" {
+  name    = "CrossOriginIsolation"
+  comment = "Places the app/website in a high-security, process-isolated environment"
+
+  custom_headers_config {
+    items {
+      header   = "Cross-Origin-Opener-Policy"
+      value    = "same-origin"
+      override = true
+    }
+
+    items {
+      header   = "Cross-Origin-Embedder-Policy"
+      value    = "credentialless"
+      override = true
+    }
+
+    items {
+      header   = "Cross-Origin-Resource-Policy"
+      value    = "cross-origin"
+      override = true
     }
   }
 }
