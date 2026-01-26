@@ -6,6 +6,15 @@ cluster: main
 config:
   default:
     desired_count: 1
+    health_check:
+      protocol: 'HTTP'
+      port: *port
+      path: '/'
+      healthy_threshold: 4
+      unhealthy_threshold: 3
+      interval: 100
+      timeout: 10
+      success_codes: '200-299'
     task_definition:
       name: *service_name
       image: nginx

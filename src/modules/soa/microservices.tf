@@ -156,11 +156,13 @@ resource "aws_lb_target_group" "microservice" {
   port        = each.value.port
 
   health_check {
-    protocol            = "HTTP"
-    healthy_threshold   = 3
-    unhealthy_threshold = 2
-    interval            = 30
-    timeout             = 5
+    protocol            = try(each.value.config[var.env].health_check.protocol, try(each.value.config.default.health_check.protocol, "HTTP"))
+    path                = try(each.value.config[var.env].health_check.path, try(each.value.config.default.health_check.path, "/"))
+    matcher             = try(each.value.config[var.env].health_check.success_codes, try(each.value.config.default.health_check.success_codes, "200"))
+    healthy_threshold   = try(each.value.config[var.env].health_check.healthy_threshold, try(each.value.config.default.health_check.healthy_threshold, 3))
+    unhealthy_threshold = try(each.value.config[var.env].health_check.unhealthy_threshold, try(each.value.config.default.health_check.unhealthy_threshold, 2))
+    interval            = try(each.value.config[var.env].health_check.interval, try(each.value.config.default.health_check.interval, 30))
+    timeout             = try(each.value.config[var.env].health_check.timeout, try(each.value.config.default.health_check.timeout, 5))
   }
 }
 

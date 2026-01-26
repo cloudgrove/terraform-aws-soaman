@@ -292,7 +292,8 @@ config:
   ...
 ```
 
-... And 3 environment-specific micro-configs under the YAML key `config`, which are:
+... And 4 environment-specific micro-configs under the YAML key `config`, which are:
+  * `health_check`, to configure the health check performed by the load balancer on the microservice containers
   * `task_definition`, to configure the Docker container and its memory/compute power
   * `variables`, to inject the microservice environment variables
   * `resources`, to specify and configure microservice resources (such as SQS queues, RDS databases, EFS/S3 access)
