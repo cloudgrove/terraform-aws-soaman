@@ -36,11 +36,20 @@ config:
       efs:
         - /var/gateway-service
         - /var/shared
+      elasticache:
+        redis:
+          engine: redis
+          engine_version: 7
+          storage: 1 #GB
+          ecpu_min: 1000
+          ecpu_max: 5000
       rds:
         postgres:
           engine: postgres
           engine_version: 18.1
           password: *default_pg_pass
+          storage: 20 #GB
+          storage_max: 2000 #GB
       sqs:
         low:
           delay_seconds: 3

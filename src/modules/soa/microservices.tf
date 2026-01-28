@@ -5,6 +5,17 @@ locals {
     for file_path in local.microservice_file_paths :
     try(yamldecode(file(file_path)).name, replace(file_path, "/${local.microservice_dir}|.yml/", "")) => yamldecode(file(file_path))
   }
+  microservice_subnet_ids = {
+    for microservice, config in local.microservice_configs :
+    microservice => [
+      for subnet in [
+        for key in keys({
+          for k, v in local.private_subnet_configs :
+          k => v if v.vpc_name == config.vpc && v.subnet_group == config.subnet_group
+        }) : aws_subnet.private[key]
+      ] : subnet.id
+    ]
+  }
   microservice_queues = merge(flatten([
     for microservice, microservice_config in local.microservice_configs : {
       for queue, queue_config in merge(try(microservice_config.config.default.resources.sqs, {}), try(microservice_config.config[var.env].resources.sqs, {})) :
@@ -18,6 +29,17 @@ locals {
         microservice = microservice
         cluster      = microservice_config.cluster
         vpc          = microservice_config.vpc
+      })
+    }
+  ])...)
+  microservice_caches = merge(flatten([
+    for microservice, microservice_config in local.microservice_configs : {
+      for cache, cache_config in merge(try(microservice_config.config.default.resources.elasticache, {}), try(microservice_config.config[var.env].resources.elasticache, {})) :
+      "${microservice}-${cache}" => merge(try(microservice_config.config.default.resources.elasticache[cache], {}), cache_config, {
+        microservice = microservice
+        cluster      = microservice_config.cluster
+        vpc          = microservice_config.vpc
+        subnet_group = microservice_config.subnet_group
       })
     }
   ])...)
@@ -42,14 +64,7 @@ resource "aws_ecs_service" "all" {
   deployment_minimum_healthy_percent = 50
 
   network_configuration {
-    subnets = [
-      for subnet in [
-        for key in keys({
-          for k, v in local.private_subnet_configs :
-          k => v if v.vpc_name == each.value.vpc && v.subnet_group == each.value.subnet_group
-        }) : aws_subnet.private[key]
-      ] : subnet.id
-    ]
+    subnets         = local.microservice_subnet_ids[each.key]
     security_groups = [aws_security_group.alb[each.value.cluster].id, aws_security_group.microservice[each.key].id]
   }
 
@@ -222,6 +237,37 @@ resource "aws_efs_access_point" "microservice" {
 }
 
 #
+# SQS
+#
+
+resource "aws_sqs_queue" "microservice" {
+  for_each = local.microservice_queues
+
+  name                      = each.value.name
+  fifo_queue                = try(each.value.fifo_queue, false)
+  delay_seconds             = try(each.value.delay_seconds, 0)
+  max_message_size          = try(each.value.max_message_size, 262144)
+  message_retention_seconds = try(each.value.message_retention_seconds, 1209600)
+  receive_wait_time_seconds = try(each.value.receive_wait_time_seconds, 0)
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.microservice_dlq[each.key].arn
+    maxReceiveCount     = try(each.value.max_receive_count, 5)
+  })
+}
+
+resource "aws_sqs_queue" "microservice_dlq" {
+  for_each = local.microservice_queues
+
+  name                      = replace(each.value.name, each.key, "${each.key}-dlq")
+  fifo_queue                = try(each.value.fifo_queue, false)
+  delay_seconds             = 0
+  max_message_size          = 262144
+  message_retention_seconds = 1209600
+  receive_wait_time_seconds = 0
+}
+
+#
 # RDS
 #
 
@@ -256,22 +302,23 @@ data "aws_kms_secrets" "microservice_database" {
 resource "aws_db_instance" "microservice_database" {
   for_each = local.microservice_rds_instances
 
-  identifier        = each.key
-  engine            = each.value.engine
-  engine_version    = each.value.engine_version
-  instance_class    = try(each.value.instance_class, "db.t4g.micro")
-  allocated_storage = try(each.value.allocated_storage, 10)
-  db_name           = try(each.value.db_name, "main")
-  username          = try(each.value.username, "root")
-  password          = data.aws_kms_secrets.microservice_database[each.key].plaintext["password"]
-  multi_az          = true
+  identifier     = each.key
+  engine         = each.value.engine
+  engine_version = each.value.engine_version
+  instance_class = try(each.value.instance, "db.t4g.micro")
+  db_name        = try(each.value.database, "main")
+  username       = try(each.value.username, "root")
+  password       = data.aws_kms_secrets.microservice_database[each.key].plaintext["password"]
+  multi_az       = true
 
   parameter_group_name         = try(each.value.parameter_group_name, null)
   storage_encrypted            = try(each.value.storage_encrypted, true)
-  max_allocated_storage        = try(each.value.max_allocated_storage, 1000)
+  allocated_storage            = try(each.value.storage, 10)
+  max_allocated_storage        = try(each.value.storage_max, 1000)
+  backup_window                = try(each.value.backup_window, null)
   backup_retention_period      = try(each.value.backup_retention_period, 30)
+  skip_final_snapshot          = try(each.value.backup_skipped_at_termination, true)
   performance_insights_enabled = try(each.value.performance_insights_enabled, true)
-  skip_final_snapshot          = try(each.value.skip_final_snapshot, true)
   apply_immediately            = try(each.value.apply_immediately, true)
 
   db_subnet_group_name   = aws_db_subnet_group.private[each.value.vpc].name
@@ -307,34 +354,69 @@ resource "aws_route53_record" "microservice_database" {
 }
 
 #
-# SQS
+# ElastiCache
 #
 
-resource "aws_sqs_queue" "microservice" {
-  for_each = local.microservice_queues
-
-  name                      = each.value.name
-  fifo_queue                = try(each.value.fifo_queue, false)
-  delay_seconds             = try(each.value.delay_seconds, 0)
-  max_message_size          = try(each.value.max_message_size, 262144)
-  message_retention_seconds = try(each.value.message_retention_seconds, 1209600)
-  receive_wait_time_seconds = try(each.value.receive_wait_time_seconds, 0)
-
-  redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.microservice_dlq[each.key].arn
-    maxReceiveCount     = try(each.value.max_receive_count, 5)
-  })
+locals {
+  cache_ports = {
+    redis     = 6379
+    valkey    = 6379
+    memcached = 11211
+  }
 }
 
-resource "aws_sqs_queue" "microservice_dlq" {
-  for_each = local.microservice_queues
+resource "aws_elasticache_serverless_cache" "microservice_cache" {
+  for_each = local.microservice_caches
 
-  name                      = replace(each.value.name, each.key, "${each.key}-dlq")
-  fifo_queue                = try(each.value.fifo_queue, false)
-  delay_seconds             = 0
-  max_message_size          = 262144
-  message_retention_seconds = 1209600
-  receive_wait_time_seconds = 0
+  name                     = each.key
+  engine                   = each.value.engine
+  major_engine_version     = each.value.engine_version
+  description              = try(each.value.description, "${each.value.engine} cache for ${each.value.microservice} microservice")
+  kms_key_id               = try(each.value.kms_key_id, null)
+  daily_snapshot_time      = try(each.value.backup_time, null)
+  snapshot_retention_limit = try(each.value.backup_retention_period, null)
+  security_group_ids       = [aws_security_group.microservice_cache[each.key].id]
+  subnet_ids               = local.microservice_subnet_ids[each.value.microservice]
+
+  cache_usage_limits {
+    data_storage {
+      maximum = try(each.value.storage, 1)
+      unit    = "GB"
+    }
+
+    ecpu_per_second {
+      maximum = try(each.value.ecpu_max, 5000)
+      minimum = try(each.value.ecpu_min, 1000)
+    }
+  }
+}
+
+resource "aws_security_group" "microservice_cache" {
+  for_each = local.microservice_caches
+
+  name   = "soa-${each.value.vpc}.${each.value.cluster}.${each.key}"
+  vpc_id = aws_vpc.all[each.value.vpc].id
+}
+
+resource "aws_security_group_rule" "microservice_cache" {
+  for_each = local.microservice_caches
+
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = local.cache_ports[each.value.engine]
+  to_port                  = local.cache_ports[each.value.engine]
+  security_group_id        = aws_security_group.microservice_cache[each.key].id
+  source_security_group_id = aws_security_group.microservice[each.value.microservice].id
+}
+
+resource "aws_route53_record" "microservice_cache" {
+  for_each = local.microservice_caches
+
+  zone_id = aws_route53_zone.internal[each.value.vpc].id
+  name    = each.key
+  type    = "CNAME"
+  ttl     = "30"
+  records = [aws_elasticache_serverless_cache.microservice_cache[each.key].endpoint[0].address]
 }
 
 #
