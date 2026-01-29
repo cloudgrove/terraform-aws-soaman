@@ -98,7 +98,7 @@ resource "aws_security_group_rule" "openvpn" {
   type                     = "ingress"
   protocol                 = "tcp"
   from_port                = 2000
-  to_port                  = 6000
+  to_port                  = 12000
   security_group_id        = each.value.id
   source_security_group_id = aws_security_group.openvpn.id
 }

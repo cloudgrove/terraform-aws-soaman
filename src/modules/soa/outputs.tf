@@ -7,7 +7,11 @@ output "public_subnets" {
 }
 
 output "security_groups" {
-  value = merge(aws_security_group.cluster, aws_security_group.microservice_database)
+  value = merge(
+    aws_security_group.cluster,
+    aws_security_group.microservice_cache,
+    aws_security_group.microservice_database,
+  )
 }
 
 output "vpcs" {
