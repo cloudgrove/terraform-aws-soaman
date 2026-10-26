@@ -394,6 +394,13 @@ cloudgrove-client-1.beta.public-assets
 The full list of configuration parameters for a bucket creation is as follows:
 ```
 name: ... # example: public-assets
+versioning: ... # optional boolean; omitted means unmanaged
+require_tls: ... # defaults to false
+encryption: # optional; omitted means unmanaged
+  sse_algorithm: ... # AES256, aws:kms, or aws:kms:dsse
+  kms_master_key_id: ... # optional KMS key ARN/ID
+  bucket_key_enabled: ... # defaults to false
+  blocked_encryption_types: ... # optional list, e.g. ["SSE-C"]
 object_ownership: ... # defaults to `BucketOwnerPreferred`
 access:
   acl: ... # defaults to `private`
@@ -417,8 +424,13 @@ statements: ... # defaults to `null`
     effect: ...
     actions: ...
     resource: ...
+    condition: ... # optional IAM condition object
   - ...
 ```
+
+`BucketOwnerEnforced` disables ACL resource creation. The `s3` module also accepts `protect_buckets = true` to enable Terraform deletion protection for all buckets in that module invocation. Public-read, TLS-only, and custom policy statements are combined into one policy per bucket.
+
+The S3 module requires AWS provider 6.37.0 or newer. Existing users must migrate bucket policy state addresses when upgrading; changing `protect_buckets` also requires bucket state moves. See the [S3 module configuration and migration guide](src/modules/s3/README.md) before applying.
 
 See an example [here](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/buckets/public-assets.yml), which provisions a read-only pubilc S3 bucket called `cloudgrove.alpha.public-assets`.
 

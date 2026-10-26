@@ -1,3 +1,4 @@
 output "buckets" {
-  value = aws_s3_bucket.all
+  description = "S3 bucket resources by configured name, including protected buckets."
+  value       = local.buckets
 }
