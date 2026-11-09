@@ -40,7 +40,7 @@ The design of `aws-soaman` enjoys the benefits of multiple features:
 
 1. Email-enabled service using SES, to enable microservices to send emails with proper DNS setup.
 
-1. S3-hosted web apps, to allow developers to deploy web apps for their SOA-based backends.
+1. S3-hosted web apps and public/media files, to allow developers to deploy web apps for their SOA-based backends.
 
 
 # Managing environments
@@ -425,16 +425,38 @@ See an example [here](https://github.com/cloudgrove/terraform-aws-soaman/blob/de
 
 ## App config
 
-The full list of configuration parameters for a hosted web app is as follows:
+The full list of configuration parameters for a hosted web app or static asset distribution is as follows:
 ```
 name: ... # String identifying the app; example: `landing-site`
 subdomain: ... # defaults to the empty string
 path: ... # S3 location, excluding the bucket name; example: `/apps/landing-site/current`
 masked_env: ... # Name of the environment to be masked/hidden from the subdomain URL
 enabled: ... # Desired status of the CloudFront distribution; defaults to `true`
+spa: ... # Whether 403/404 errors fall back to the root document with HTTP 200; defaults to `true`
+default_root_object: ... # Defaults to `index.html` when spa is true, or the empty string when false
+cache:
+  min_ttl: ... # Minimum cache lifetime in seconds; defaults to `0`
+  default_ttl: ... # Cache lifetime when the origin omits caching headers; defaults to `3600`
+  max_ttl: ... # Maximum cache lifetime in seconds; defaults to `86400`
+  query_string: ... # Whether query strings are forwarded and included in the cache key; defaults to `true`
 ```
 
 See an example [here](https://github.com/cloudgrove/terraform-aws-soaman/blob/develop/src/examples/complete/config/apps/main.yml), which provisions a web app hosted at `https://app.alpha.cloudgrove.io`, and at `https://app.cloudgrove.io` if `masked_env` has a value of `alpha` in this case.
+
+For static media files that are to be hosted outside the app build artifact (such as product photos), a seprate CloudFront distribution is needed. For that, the following configuration can be used:
+
+```yaml
+name: media
+subdomain: media
+path: /media
+spa: false
+cache:
+  min_ttl: 0
+  max_ttl: 31536000
+  query_string: false
+```
+
+This creates a separate CloudFront distribution and DNS record, reusing the app set's S3 bucket and certificate. For `env = "prod"` and `domain = "example.com"`, the S3 object `media/products/123/front.webp` is served at `https://media.prod.example.com/products/123/front.webp`. Also, with `spa: false`, there is no default root document or custom error rewriting; as a result, missing S3 objects retain their origin error response instead of returning HTML with HTTP 200.
 
 Note:
 - All apps within the same app set reside in the same bucket, which is specified in the `module` invocation. If a new app is to be hosted in a different S3 bucket, then a new `module` block (invoking `appset`) is required.
