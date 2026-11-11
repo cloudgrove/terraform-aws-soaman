@@ -25,7 +25,7 @@ resource "aws_cloudfront_distribution" "app" {
   for_each = local.app_configs
 
   enabled             = try(each.value.enabled, true)
-  default_root_object = "index.html"
+  default_root_object = try(each.value.default_root_object, try(each.value.spa, true) ? "index.html" : "")
   comment             = "${each.value.subdomain}.${var.env}.${var.domain}"
   aliases             = compact(["${each.value.subdomain}.${var.env}.${var.domain}", try(each.value.masked_env, null) == var.env ? "${each.value.subdomain}.${var.domain}" : null])
 
@@ -35,18 +35,15 @@ resource "aws_cloudfront_distribution" "app" {
     origin_path = each.value.path
   }
 
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
-  }
+  dynamic "custom_error_response" {
+    for_each = try(each.value.spa, true) ? [403, 404] : []
 
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
+    content {
+      error_code            = custom_error_response.value
+      response_code         = 200
+      response_page_path    = "/${try(each.value.default_root_object, "index.html")}"
+      error_caching_min_ttl = 10
+    }
   }
 
   default_cache_behavior {
@@ -55,12 +52,12 @@ resource "aws_cloudfront_distribution" "app" {
     cached_methods             = ["GET", "HEAD"]
     viewer_protocol_policy     = "redirect-to-https"
     response_headers_policy_id = aws_cloudfront_response_headers_policy.cross_origin_isolation.id
-    min_ttl                    = 0
-    default_ttl                = 3600
-    max_ttl                    = 86400
+    min_ttl                    = try(each.value.cache.min_ttl, 0)
+    default_ttl                = try(each.value.cache.default_ttl, 3600)
+    max_ttl                    = try(each.value.cache.max_ttl, 86400)
 
     forwarded_values {
-      query_string = true
+      query_string = try(each.value.cache.query_string, true)
       cookies {
         forward = "none"
       }

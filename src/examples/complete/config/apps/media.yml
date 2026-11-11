@@ -1,0 +1,8 @@
+name: media
+subdomain: media
+path: /media
+spa: false
+cache:
+  min_ttl: 0
+  max_ttl: 31536000
+  query_string: false
